@@ -20,13 +20,15 @@ export default function Onboarding() {
   const { user, profile, isAuthReady } = useAuth();
   const [selectedObjective, setSelectedObjective] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
-    if (isAuthReady && profile) {
-      // If user has already completed onboarding, redirect directly to the app dashboard
-      if (profile.onboardingCompleted) {
-        navigate("/app");
-      }
+    if (isAuthReady && !user) {
+      navigate("/login", { replace: true });
+      return;
+    }
+    if (isAuthReady && profile?.onboardingCompleted) {
+      navigate("/app", { replace: true });
     }
   }, [isAuthReady, profile, navigate]);
 
@@ -72,7 +74,8 @@ export default function Onboarding() {
   const handleConfirm = async () => {
     if (!selectedObjective || !user) return;
     setSaving(true);
-    
+    setSaveError("");
+
     try {
       const updatedFields = {
         onboardingCompleted: true,
@@ -80,21 +83,13 @@ export default function Onboarding() {
         lastAccess: new Date().toISOString()
       };
 
-      if (user.uid === 'guest_demo_user') {
-        const simProfileStr = localStorage.getItem("simulatedProfile");
-        if (simProfileStr) {
-          const simProfile = JSON.parse(simProfileStr);
-          const updatedProfile = { ...simProfile, ...updatedFields };
-          localStorage.setItem("simulatedProfile", JSON.stringify(updatedProfile));
-        }
-      } else {
-        await userService.updateProfile(user.uid, updatedFields);
-      }
+      await userService.updateProfile(user.uid, updatedFields);
       
       // Redirect to internal application home / app dashboard
       navigate("/app");
     } catch (err) {
       console.error("Error saving onboarding selection:", err);
+      setSaveError("Não conseguimos salvar sua escolha agora. Verifique sua conexão e tente novamente.");
     } finally {
       setSaving(false);
     }
@@ -102,9 +97,9 @@ export default function Onboarding() {
 
   if (!isAuthReady) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4">
+      <div className="min-h-dvh bg-[var(--senti-app-bg)] text-[var(--senti-text)] flex flex-col items-center justify-center p-4">
         <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-emerald-500" />
-        <p className="mt-4 text-xs font-bold uppercase tracking-widest text-slate-550">Sintonizando SentiPae...</p>
+        <p className="mt-4 text-xs font-bold uppercase tracking-widest text-[var(--senti-muted)]">Preparando seu espaço...</p>
       </div>
     );
   }
@@ -112,14 +107,14 @@ export default function Onboarding() {
   const welcomeName = profile?.nome || user?.displayName || "Usuário";
 
   return (
-    <div className="min-h-screen bg-slate-55 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col justify-between p-4 sm:p-6 transition-colors font-sans">
+    <div className="min-h-dvh bg-[var(--senti-app-bg)] text-[var(--senti-text)] flex flex-col justify-between p-4 sm:p-6 transition-colors font-sans">
       
       {/* Top Header Decorator */}
       <div className="flex items-center justify-center gap-2 pt-4">
         <div className="w-9 h-9 bg-emerald-500/15 rounded-xl flex items-center justify-center border border-emerald-500/20">
           <HeartPulse className="w-5 h-5 text-emerald-500 animate-pulse" />
         </div>
-        <span className="text-sm font-bold tracking-wider font-serif italic text-slate-850 dark:text-slate-200">
+        <span className="text-sm font-bold tracking-wider font-serif italic text-[var(--senti-text)]">
           SentiPae
         </span>
       </div>
@@ -129,14 +124,14 @@ export default function Onboarding() {
         
         {/* Welcome & Intro */}
         <div className="text-center space-y-2.5 px-2">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] text-emerald-600 dark:text-emerald-450 font-bold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-1.5 px-3 py-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-xs text-emerald-700 dark:text-emerald-300 font-bold uppercase tracking-wider">
             <Sparkles className="w-3 h-3" />
             <span>Primeiro Acesso</span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold font-serif italic text-slate-850 dark:text-slate-100 leading-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold font-serif text-[var(--senti-text)] leading-tight">
             Bem-vindo ao SentiPae, {welcomeName}!
           </h2>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-light leading-relaxed max-w-sm mx-auto">
+          <p className="text-sm sm:text-base text-[var(--senti-muted)] leading-relaxed max-w-sm mx-auto">
             Vamos personalizar sua jornada de regulação e acolhimento. Qual é o seu objetivo principal hoje?
           </p>
         </div>
@@ -151,7 +146,7 @@ export default function Onboarding() {
                 key={obj.id}
                 onClick={() => setSelectedObjective(obj.id)}
                 className={cn(
-                  "w-full p-4.5 rounded-[2rem] border text-left flex items-start gap-4 transition-all duration-300 relative overflow-hidden group cursor-pointer active:scale-99 select-none bg-gradient-to-br",
+                  "w-full min-h-[84px] p-4 rounded-3xl border text-left flex items-start gap-4 transition-all duration-200 relative overflow-hidden group cursor-pointer active:scale-[0.99] select-none bg-gradient-to-br focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500",
                   isSelected 
                     ? "from-emerald-500/10 to-emerald-500/5 border-emerald-500/40 text-slate-900 dark:text-slate-100 shadow-sm" 
                     : "bg-white dark:bg-slate-900 border-slate-200/60 dark:border-white/5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/1"
@@ -165,7 +160,7 @@ export default function Onboarding() {
                 </div>
                 <div className="space-y-1 z-10 flex-1">
                   <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold font-serif italic tracking-tight">{obj.label}</p>
+                    <p className="text-sm font-bold tracking-tight">{obj.label}</p>
                     {isSelected && (
                       <motion.div 
                         initial={{ scale: 0 }}
@@ -176,12 +171,18 @@ export default function Onboarding() {
                       </motion.div>
                     )}
                   </div>
-                  <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-normal font-light pr-4">{obj.desc}</p>
+                  <p className="text-xs sm:text-sm text-[var(--senti-muted)] leading-relaxed pr-4">{obj.desc}</p>
                 </div>
               </button>
             );
           })}
         </div>
+
+        {saveError && (
+          <p role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">
+            {saveError}
+          </p>
+        )}
 
         {/* Proceed Action Button */}
         <div className="px-1">
@@ -189,7 +190,7 @@ export default function Onboarding() {
             disabled={!selectedObjective || saving}
             onClick={handleConfirm}
             className={cn(
-              "w-full py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2",
+              "w-full min-h-14 py-4 rounded-2xl font-bold text-sm transition-all flex items-center justify-center gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500",
               selectedObjective 
                 ? "bg-emerald-500 text-white hover:bg-emerald-600 cursor-pointer shadow-lg shadow-emerald-500/20 active:scale-98" 
                 : "bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed"
@@ -210,7 +211,7 @@ export default function Onboarding() {
 
       {/* Footer Branding */}
       <footer className="text-center pb-2">
-        <p className="text-[9px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-widest">
+        <p className="text-xs text-[var(--senti-muted)] font-semibold uppercase tracking-widest">
           SentiPae — Espaço Seguro & Confidencial
         </p>
       </footer>
