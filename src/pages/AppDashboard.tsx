@@ -287,7 +287,7 @@ export default function AppDashboard() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-24 transition-colors font-sans select-none">
       
       {/* HEADER SECTION */}
-      <header className="px-4 py-6 sm:px-6 border-b border-slate-200/60 dark:border-white/5 bg-white/95 dark:bg-slate-950/85 backdrop-blur-md sticky top-0 z-30 flex justify-between items-center transition-all">
+      <header className="px-4 py-6 sm:px-6 border-b border-slate-200/60 dark:border-white/5 bg-white/90 dark:bg-slate-950/85 backdrop-blur-xl sticky top-0 z-30 shadow-[0_1px_0_rgba(15,23,42,0.04)] flex justify-between items-center transition-all">
         <div className="flex items-center gap-3">
           {/* User Photo */}
           <button 
@@ -302,7 +302,7 @@ export default function AppDashboard() {
           </button>
           
           <div className="space-y-0.5">
-            <h1 className="text-base sm:text-lg font-black font-serif italic text-slate-850 dark:text-slate-100 leading-none">
+            <h1 className="text-base sm:text-lg font-black font-serif italic text-slate-900 dark:text-slate-100 leading-none">
               Olá, {welcomeName}!
             </h1>
             <p className="text-[10px] text-slate-500 dark:text-emerald-400/80 font-bold uppercase tracking-widest leading-none">
@@ -322,7 +322,7 @@ export default function AppDashboard() {
       </header>
 
       {/* MAIN CONTAINER */}
-      <main className="p-4 sm:p-6 max-w-xl mx-auto space-y-6">
+      <main className="p-4 sm:p-6 max-w-6xl mx-auto w-full space-y-7">
         
         {/* Dynamic Welcome Affirmation Callout */}
         <div className="p-4 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 dark:from-emerald-500/10 dark:to-teal-500/10 border border-emerald-500/15 rounded-3xl space-y-1 relative overflow-hidden">
@@ -348,7 +348,7 @@ export default function AppDashboard() {
             )}
           </div>
           
-          <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             {shortcuts.map((sc) => {
               const Icon = sc.icon;
               return (
