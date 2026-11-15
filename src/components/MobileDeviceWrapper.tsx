@@ -20,7 +20,6 @@ import {
   Activity,
   Download,
   Share,
-  Check,
   ShieldAlert,
   Heart,
   Users,
