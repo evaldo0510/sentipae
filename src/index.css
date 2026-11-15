@@ -222,3 +222,66 @@ button:disabled, [aria-disabled="true"] { cursor: not-allowed; opacity: .58; }
 @media (min-width: 1024px) {
   #sentí-mobile-stage { align-items: stretch; }
 }
+
+
+/* SentiPae unified design tokens: one source of truth for the application shell. */
+:root {
+  --brand-bg: var(--senti-app-bg);
+  --brand-dark: #eaf1ee;
+  --brand-slate: var(--senti-surface);
+  --brand-text: var(--senti-text);
+  --brand-green: var(--senti-primary);
+  --brand-indigo: #5865a8;
+  --brand-red: #dc5252;
+}
+.dark {
+  --brand-bg: var(--senti-app-bg);
+  --brand-dark: #142321;
+  --brand-slate: var(--senti-surface);
+  --brand-text: var(--senti-text);
+  --brand-green: var(--senti-primary);
+  --brand-indigo: #9ba8ef;
+  --brand-red: #fb7185;
+}
+
+/* Authentication experience */
+.senti-auth-page {
+  background:
+    radial-gradient(ellipse at 12% 15%, rgba(35, 155, 129, .10), transparent 42%),
+    radial-gradient(ellipse at 88% 85%, rgba(91, 122, 168, .08), transparent 40%),
+    var(--senti-app-bg);
+  color: var(--senti-text);
+}
+.senti-auth-card {
+  background: var(--senti-surface);
+  border: 1px solid var(--senti-border);
+  box-shadow: var(--senti-shadow);
+}
+.senti-auth-brand { color: var(--senti-text); text-decoration: none; }
+.senti-auth-mark {
+  display: grid; width: 2.5rem; height: 2.5rem; place-items: center;
+  border-radius: .9rem; color: white; background: var(--senti-primary);
+}
+.senti-auth-back { color: var(--senti-muted); }
+.senti-auth-back:hover { background: var(--senti-accent); color: var(--senti-text); }
+.senti-auth-eyebrow { color: var(--senti-primary-strong); background: var(--senti-accent); }
+.senti-auth-highlight { color: var(--senti-primary); }
+.senti-auth-subtitle { color: var(--senti-muted); }
+.senti-auth-muted { color: var(--senti-muted); }
+.senti-auth-trust-icon {
+  display: grid; width: 2.75rem; height: 2.75rem; place-items: center;
+  border-radius: 1rem; color: var(--senti-primary); background: var(--senti-accent);
+}
+.senti-auth-google {
+  color: #172b27; background: #fff; border: 1px solid #dbe5e1;
+  box-shadow: 0 4px 12px rgba(20, 55, 47, .06);
+}
+.senti-auth-google:hover { background: #f8fbfa; box-shadow: 0 8px 22px rgba(20, 55, 47, .10); }
+.dark .senti-auth-google { color: #e8f3ef; background: #182724; border-color: rgba(226,245,239,.16); }
+.dark .senti-auth-google:hover { background: #20332f; }
+.senti-auth-divider { background: var(--senti-border); }
+.senti-auth-note { color: var(--senti-muted); background: var(--senti-surface-muted); border: 1px solid var(--senti-border); }
+.senti-auth-link { color: var(--senti-primary); }
+@media (max-width: 420px) {
+  .senti-auth-card { border-radius: 1.5rem; }
+}
