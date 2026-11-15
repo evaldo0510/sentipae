@@ -36,11 +36,22 @@ export default function Login() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    getRedirectResult(auth).catch((redirectError) => {
-      console.error("Falha ao concluir o redirecionamento do Google:", redirectError);
-      setError(getAuthErrorMessage(redirectError));
-    });
-  }, []);
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          await logSecurityEvent(
+            "login",
+            "Autenticação com Google concluída após redirecionamento.",
+            [],
+            "sucesso"
+          );
+        }
+      })
+      .catch((redirectError) => {
+        console.error("Falha ao concluir o redirecionamento do Google:", redirectError);
+        setError(getAuthErrorMessage(redirectError));
+      });
+  }, [logSecurityEvent]);
 
   useEffect(() => {
     if (isAuthReady && user && profile) {
