@@ -20,6 +20,10 @@
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+@utility pb-safe-bottom {
+  padding-bottom: calc(env(safe-area-inset-bottom) + 0.5rem);
+}
+
 @utility pt-safe {
   padding-top: env(safe-area-inset-top);
 }
