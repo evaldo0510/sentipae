@@ -78,9 +78,8 @@ export default function Dashboard() {
 
     const loadData = () => {
       setLoading(true);
-      const simUserStr = localStorage.getItem("simulatedUser");
-      const simUser = simUserStr ? JSON.parse(simUserStr) : null;
-      const currentUser = auth.currentUser || simUser;
+      // Firebase Auth is the only trusted source of identity.
+      const currentUser = auth.currentUser;
 
       if (!currentUser) {
         setIsDemo(true);
@@ -123,24 +122,11 @@ export default function Dashboard() {
     };
   }, [profile]);
 
-  // If there's no real data, we create mock data to keep the interface highly informative
-  const activeMoodList = !isDemo && moodHistory.length > 0 ? moodHistory : [
-    { value: 8, intensity: 6, note: "Pratiquei meditação e me senti muito calmo", timestamp: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString(), triggers: ["Meditação", "Saúde"] },
-    { value: 5, intensity: 5, note: "Dia cansativo no trabalho", timestamp: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(), triggers: ["Trabalho"] },
-    { value: 4, intensity: 7, note: "Tive dor de cabeça no fim da tarde", timestamp: new Date(Date.now() - 2 * 24 * 3600 * 1000).toISOString(), triggers: ["Saúde"] },
-    { value: 7, intensity: 4, note: "Conversei com um amigo de longa data", timestamp: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString(), triggers: ["Amigos"] },
-    { value: 9, intensity: 5, note: "Iniciei um projeto novo com ótima energia!", timestamp: new Date().toISOString(), triggers: ["Trabalho", "Família"] }
-  ];
-
-  const activeDiaryList = !isDemo && diaryEntries.length > 0 ? diaryEntries : [
-    { timestamp: new Date(Date.now() - 4 * 24 * 3600 * 1000).toISOString() },
-    { timestamp: new Date(Date.now() - 1 * 24 * 3600 * 1000).toISOString() },
-    { timestamp: new Date().toISOString() }
-  ];
-
-  const activeAppointmentList = !isDemo && appointments.length > 0 ? appointments : [
-    { date: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(), status: "completed" }
-  ];
+  // Dashboard metrics are derived only from the authenticated user's real records.
+  // Empty collections remain empty; never fabricate emotional or clinical history.
+  const activeMoodList = moodHistory;
+  const activeDiaryList = diaryEntries;
+  const activeAppointmentList = appointments;
 
   // Process data for Recharts Weekly Mood and Frequency of Use
   const past7Days = getPast7Days();
@@ -192,9 +178,9 @@ export default function Dashboard() {
 
   // Calculate high-level stats for the summary cards
   const validMoods = weeklyMoodData.filter((d) => d.humor !== null);
-  const averageMood = validMoods.length > 0 
-    ? Math.round((validMoods.reduce((acc, curr) => acc + (curr.humor || 0), 0) / validMoods.length) * 10) / 10 
-    : 7.0;
+  const averageMood = validMoods.length > 0
+    ? Math.round((validMoods.reduce((acc, curr) => acc + (curr.humor || 0), 0) / validMoods.length) * 10) / 10
+    : null;
 
   const totalInteractions = frequencyData.reduce((acc, curr) => acc + curr.Total, 0);
   const activeDaysCount = frequencyData.filter((d) => d.Total > 0).length;
@@ -206,7 +192,7 @@ export default function Dashboard() {
     triggerCounts[t] = (triggerCounts[t] || 0) + 1;
   });
   const sortedTriggers = Object.entries(triggerCounts).sort((a, b) => b[1] - a[1]);
-  const topTrigger = sortedTriggers.length > 0 ? sortedTriggers[0][0] : "Nenhum registrado";
+  const topTrigger = sortedTriggers.length > 0 ? sortedTriggers[0][0] : "Sem registros";
 
   // Translate mood values into clean descriptive labels
   const getMoodDescription = (val: number) => {
@@ -268,7 +254,7 @@ export default function Dashboard() {
     );
   }
 
-  const isActuallyDemo = isDemo || (moodHistory.length === 0 && diaryEntries.length === 0);
+  const hasNoRecords = !isDemo && moodHistory.length === 0 && diaryEntries.length === 0 && appointments.length === 0;
 
   return (
     <motion.div 
@@ -305,14 +291,15 @@ export default function Dashboard() {
       </div>
 
       {/* Demo Banner */}
-      {isActuallyDemo && (
+      {(isDemo || hasNoRecords) && (
         <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-500/20 rounded-2xl p-4 flex gap-3 items-start text-amber-800 dark:text-amber-300">
           <Info className="w-5 h-5 shrink-0 mt-0.5" />
           <div className="space-y-1">
-            <h4 className="text-xs font-bold uppercase tracking-wider">Demonstração Ativa</h4>
+            <h4 className="text-xs font-bold uppercase tracking-wider">{isDemo ? "Dados indisponíveis" : "Sua jornada está começando"}</h4>
             <p className="text-xs leading-relaxed opacity-90">
-              Ainda não identificamos registros suficientes em sua conta. Exibindo dados ilustrativos abaixo. 
-              <strong> Registre seu humor na área superior ou escreva no seu diário</strong> para ver seus gráficos reais em tempo real!
+              {isDemo
+                ? "Não foi possível carregar seus registros agora. Atualize a página ou tente novamente em instantes."
+                : "Ainda não há registros nesta área. Quando você quiser, registre seu humor ou escreva no diário para acompanhar sua jornada."}
             </p>
           </div>
         </div>
@@ -324,11 +311,11 @@ export default function Dashboard() {
         <div className="bg-slate-50 dark:bg-slate-950/40 p-4 rounded-3xl border border-slate-100 dark:border-white/5 space-y-2">
           <div className="flex justify-between items-center">
             <span className="text-[10px] font-bold uppercase text-slate-400 tracking-wider">Humor Médio</span>
-            <span className="text-xs">{getMoodEmoji(averageMood)}</span>
+            <span className="text-xs">{averageMood === null ? "—" : getMoodEmoji(averageMood)}</span>
           </div>
           <div className="space-y-0.5">
-            <p className="text-2xl font-black text-slate-800 dark:text-slate-100">{averageMood} <span className="text-xs font-medium text-slate-400">/10</span></p>
-            <p className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 tracking-wide">{getMoodDescription(averageMood)}</p>
+            <p className="text-2xl font-black text-slate-800 dark:text-slate-100">{averageMood === null ? "—" : averageMood} <span className="text-xs font-medium text-slate-400">/10</span></p>
+            <p className="text-[10px] font-bold uppercase text-emerald-600 dark:text-emerald-400 tracking-wide">{averageMood === null ? "Sem registros" : getMoodDescription(averageMood)}</p>
           </div>
         </div>
 
@@ -390,7 +377,7 @@ export default function Dashboard() {
                 className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
                   activeChartEngine === "d3"
                     ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/50 dark:border-white/5"
-                    : "text-slate-450 hover:text-slate-800 dark:hover:text-slate-200"
+                    : "text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 }`}
               >
                 D3.js (Histórico)
@@ -400,7 +387,7 @@ export default function Dashboard() {
                 className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
                   activeChartEngine === "recharts"
                     ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/50 dark:border-white/5"
-                    : "text-slate-450 hover:text-slate-800 dark:hover:text-slate-200"
+                    : "text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 }`}
               >
                 Recharts (Semana)
@@ -409,7 +396,13 @@ export default function Dashboard() {
           </div>
 
           <div className="flex-1 mt-2">
-            {activeChartEngine === "d3" ? (
+            {activeMoodList.length === 0 ? (
+              <div className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-2xl bg-slate-50 px-5 text-center dark:bg-slate-950/40">
+                <Smile className="h-8 w-8 text-slate-400" />
+                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Seu histórico aparecerá aqui</p>
+                <p className="max-w-xs text-xs leading-relaxed text-slate-500">Quando fizer seu primeiro registro de humor, você poderá acompanhar suas percepções ao longo do tempo.</p>
+              </div>
+            ) : activeChartEngine === "d3" ? (
               <D3MoodHistory data={activeMoodList} />
             ) : (
               <div className="h-56 w-full text-xs font-mono">
@@ -540,7 +533,13 @@ export default function Dashboard() {
             <p className="text-[11px] text-slate-500">Métricas de interação ativa (registro de humor, diário e consultas)</p>
           </div>
 
-          <div className="h-56 w-full text-xs font-mono">
+          {totalInteractions === 0 ? (
+            <div className="flex min-h-56 flex-col items-center justify-center gap-2 rounded-2xl bg-slate-50 px-5 text-center dark:bg-slate-950/40">
+              <Activity className="h-8 w-8 text-slate-400" />
+              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Ainda sem atividades nesta semana</p>
+              <p className="max-w-xs text-xs leading-relaxed text-slate-500">Seus registros e atendimentos aparecerão neste gráfico quando acontecerem.</p>
+            </div>
+          ) : <div className="h-56 w-full text-xs font-mono">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={frequencyData} margin={{ top: 10, right: 10, left: -25, bottom: 0 }} barGap={3}>
                 <CartesianGrid strokeDasharray="3 3" stroke={highContrast ? "rgba(148, 163, 184, 0.45)" : "rgba(148, 163, 184, 0.08)"} vertical={false} />
@@ -572,7 +571,7 @@ export default function Dashboard() {
                               <div key={idx} className="flex justify-between items-center gap-4">
                                 <span className="flex items-center gap-1">
                                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-                                  <span className="text-slate-550 dark:text-slate-400">{p.name}:</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{p.name}:</span>
                                 </span>
                                 <span className="font-bold text-slate-800 dark:text-slate-100">{p.value}</span>
                               </div>
@@ -621,7 +620,7 @@ export default function Dashboard() {
                 />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </div>}
         </div>
       </div>
     </motion.div>

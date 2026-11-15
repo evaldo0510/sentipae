@@ -20,7 +20,6 @@ import {
   Activity,
   Download,
   Share,
-  Check,
   ShieldAlert,
   Heart,
   Users,
@@ -44,11 +43,6 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
   const [time, setTime] = useState("");
   const [showTools, setShowTools] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
-  // Simulated native cold-start splash screen
-  const [showSplash, setShowSplash] = useState(false);
-  const [splashPercent, setSplashPercent] = useState(0);
-  const [splashSub, setSplashSub] = useState("Preparando seu espaço de acolhimento...");
   
   // PWA Installation Guide state
   const [showInstallGuide, setShowInstallGuide] = useState(false);
@@ -97,46 +91,10 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
     }
   }, []);
 
-  // Cold start splash screen controller (per tab session)
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const hasShown = sessionStorage.getItem("senti_splash_shown_v3");
-    if (!hasShown) {
-      setShowSplash(true);
-      
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += Math.floor(Math.random() * 8) + 6;
-        if (progress >= 100) {
-          progress = 100;
-          clearInterval(interval);
-          setSplashSub("Ambiente seguro de acolhimento pronto.");
-          setTimeout(() => {
-            setShowSplash(false);
-            sessionStorage.setItem("senti_splash_shown_v3", "true");
-          }, 500);
-        } else {
-          if (progress < 25) {
-            setSplashSub("Preparando sua experiência no SentiPae...");
-          } else if (progress < 55) {
-            setSplashSub("Organizando seus recursos e informações...");
-          } else if (progress < 80) {
-            setSplashSub("Carregando os recursos de acolhimento da IARA...");
-          } else {
-            setSplashSub("Conectando você aos recursos do SentiPae...");
-          }
-        }
-        setSplashPercent(progress);
-      }, 60);
-
-      return () => clearInterval(interval);
-    }
-  }, []);
-
   const path = location.pathname;
 
   // Active state checker
-  const isActive = (route: string) => path === route;
+  const isActive = (route: string) => path === route || path.startsWith(route + "/");
 
   // Soft tactile haptic feedback simulation using standard device vibration
   const triggerHaptic = (ms = 15) => {
@@ -230,7 +188,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
       title: "Perfil",
       description: "Suas configurações, conquistas de nível e dados pessoais.",
       icon: User,
-      color: "text-slate-550 bg-slate-500/10 border-slate-500/20",
+      color: "text-slate-500 bg-slate-500/10 border-slate-500/20",
       path: "/perfil"
     },
     {
@@ -314,9 +272,9 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
 
         {/* Footer info */}
         {!sidebarCollapsed && (
-          <div className="bg-slate-50 dark:bg-slate-950/30 border border-slate-150 dark:border-white/5 rounded-2xl p-3.5 space-y-1 mt-auto">
+          <div className="bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-white/5 rounded-2xl p-3.5 space-y-1 mt-auto">
             <p className="text-[9px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400">Servidor Seguro</p>
-            <p className="text-[10px] text-slate-450 dark:text-slate-500 leading-normal font-light">Acesse seu espaço de acolhimento com privacidade.</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-normal font-light">Acesse seu espaço de acolhimento com privacidade.</p>
           </div>
         )}
       </div>
@@ -416,7 +374,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
           >
             <button 
               onClick={() => handleNavClick("/respiracao")}
-              className="px-3 py-1.5 text-[10px] font-bold text-slate-650 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
             >
               <Wind className="w-3.5 h-3.5" />
               Respiração
@@ -424,7 +382,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
             <div className="w-px h-3 bg-slate-200 dark:bg-white/10" />
             <button 
               onClick={() => handleNavClick("/inspirar")}
-              className="px-3 py-1.5 text-[10px] font-bold text-slate-650 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
               Inspirar
@@ -432,7 +390,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
             <div className="w-px h-3 bg-slate-200 dark:bg-white/10" />
             <button 
               onClick={() => handleNavClick("/live-iara")}
-              className="px-3 py-1.5 text-[10px] font-bold text-slate-650 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
             >
               <Video className="w-3.5 h-3.5" />
               Plantão
@@ -449,13 +407,13 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
         </div>
 
         {/* 5 Icon Native Bottom Navigation Interface */}
-        <nav className="absolute bottom-0 inset-x-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-white/5 px-2 pb-safe-bottom pt-2.5 flex justify-around items-center z-45 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.4)]">
+        <nav aria-label="Navegação principal" className="absolute bottom-0 inset-x-0 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-white/5 px-2 pb-safe-bottom pt-2.5 flex justify-around items-center z-45 shadow-[0_-8px_30px_rgba(0,0,0,0.06)] dark:shadow-[0_-8px_30px_rgba(0,0,0,0.4)]">
           
           {/* Button 1: Início */}
           <button 
             onClick={() => handleNavClick("/app")}
             className={cn(
-              "relative flex flex-col items-center gap-1 py-1.5 px-3 min-w-[56px] transition-all cursor-pointer",
+              "relative flex min-h-12 min-w-[56px] flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 transition-all cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500",
               isActive("/app") 
                 ? "text-emerald-600 dark:text-emerald-400 scale-105 font-black" 
                 : "text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -579,7 +537,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
                   </div>
                   <button 
                     onClick={() => setShowTools(false)}
-                    className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-650 transition-all cursor-pointer"
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -611,16 +569,18 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
 
                 <div className="grid grid-cols-1 gap-3 overflow-y-auto pr-1">
                   {quickTools.map((tool) => (
-                    <div 
+                    <button
+                      type="button"
                       key={tool.title}
                       onClick={() => {
                         setShowTools(false);
                         handleNavClick(tool.path);
                       }}
-                      className="group p-3.5 bg-slate-50 dark:bg-slate-950/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/10 border border-slate-150 dark:border-white/5 hover:border-emerald-500/20 rounded-2xl flex items-start gap-3.5 transition-all cursor-pointer active:scale-99"
+                      aria-label={`${tool.title}: ${tool.description}`}
+                      className="group w-full min-h-16 p-3.5 bg-slate-50 dark:bg-slate-950/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/10 border border-slate-200 dark:border-white/5 hover:border-emerald-500/20 rounded-2xl flex items-start gap-3.5 text-left transition-all cursor-pointer active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
                     >
                       <div className={cn("p-2.5 rounded-xl border shrink-0 group-hover:scale-105 transition-transform", tool.color)}>
-                        <tool.icon className="w-5 h-5" />
+                        <tool.icon className="w-5 h-5" aria-hidden="true" />
                       </div>
                       <div className="space-y-1 text-left min-w-0 flex-1">
                         <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
@@ -630,84 +590,17 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
                           {tool.description}
                         </p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
-                <div className="pt-2 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-2xl border border-slate-150 dark:border-white/5 text-center">
+                <div className="pt-2 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-2xl border border-slate-200 dark:border-white/5 text-center">
                   <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
                     🔑 O SentiPae conecta você a recursos de acolhimento e suporte humano.
                   </p>
                 </div>
               </motion.div>
             </>
-          )}
-        </AnimatePresence>
-
-        {/* ----------------- NATIVE COLD START SPLASH SCREEN INTERFACE ----------------- */}
-        <AnimatePresence>
-          {showSplash && (
-            <motion.div
-              initial={{ opacity: 1 }}
-              exit={{ opacity: 0, y: -40, scale: 0.98 }}
-              transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-              className="absolute inset-0 bg-slate-950 z-[999] flex flex-col items-center justify-between p-8"
-              id="native-cold-start-splash"
-            >
-              {/* Radial backdrop light */}
-              <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl" />
-              <div className="absolute bottom-1/4 left-1/2 -translate-x-1/2 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl" />
-
-              <div className="flex-1 flex flex-col items-center justify-center space-y-5 text-center">
-                {/* Custom animated logo ring */}
-                <div className="relative w-28 h-28 flex items-center justify-center">
-                  <motion.div
-                    className="absolute inset-0 rounded-full border border-emerald-500/10"
-                    animate={{ scale: [1, 1.25, 1], opacity: [0.4, 0.1, 0.4] }}
-                    transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <motion.div
-                    className="absolute inset-2 rounded-full border border-emerald-500/20"
-                    animate={{ scale: [1, 1.15, 1], opacity: [0.6, 0.2, 0.6] }}
-                    transition={{ duration: 3, delay: 0.5, repeat: Infinity, ease: "easeInOut" }}
-                  />
-                  <div className="w-16 h-16 bg-emerald-500/15 border border-emerald-500/30 rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-550/10">
-                    <Activity className="w-8 h-8 text-emerald-400" />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <h1 className="text-4xl font-serif italic text-white tracking-tight font-black">Sentí</h1>
-                  <p className="text-[10px] font-bold text-emerald-450 uppercase tracking-[0.25em]">Pronto Atendimento Emocional</p>
-                </div>
-              </div>
-
-              {/* Status & Progress Bar at bottom */}
-              <div className="w-full max-w-xs space-y-4 mb-12">
-                <div className="space-y-1.5 text-center">
-                  <p className="text-[11px] font-medium text-slate-300 font-sans tracking-wide animate-pulse">
-                    {splashSub}
-                  </p>
-                  <p className="text-[10px] font-bold text-slate-500 font-mono">
-                    {splashPercent}%
-                  </p>
-                </div>
-
-                {/* Progress ring track */}
-                <div className="h-1 w-full bg-slate-900 rounded-full overflow-hidden relative border border-white/5">
-                  <motion.div 
-                    className="h-full bg-emerald-500 rounded-full"
-                    style={{ width: `${splashPercent}%` }}
-                    transition={{ ease: "easeOut" }}
-                  />
-                </div>
-
-                <p className="text-[9px] text-center text-slate-600 font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  Ambiente de acolhimento SentiPae
-                </p>
-              </div>
-            </motion.div>
           )}
         </AnimatePresence>
 

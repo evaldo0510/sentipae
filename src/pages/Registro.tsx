@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowLeft, Save, FileText, Clock, AlertCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, Save, FileText, Clock, Sparkles, ShieldCheck } from "lucide-react";
 import { userService } from "../services/userService";
 import { chatService } from "../services/chatService";
 import { auth } from "../services/firebase";
@@ -26,6 +26,7 @@ export default function Registro() {
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorGenerating, setErrorGenerating] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   useEffect(() => {
     if (appointmentId && appointmentId !== 'new' && appointment) {
@@ -106,8 +107,16 @@ export default function Registro() {
   }, [appointmentId, patientId]);
 
   const salvar = async () => {
-    if (!nota.trim()) return;
-    
+    if (!nota.trim()) {
+      setSaveError("Escreva a evolução antes de salvar.");
+      return;
+    }
+    if (!(appointmentId && appointmentId !== "new") && !(patientId && patient)) {
+      setSaveError("Não foi possível identificar o atendimento ou paciente deste registro.");
+      return;
+    }
+
+    setSaveError("");
     setIsLoading(true);
     try {
       const extraData = {
@@ -128,28 +137,29 @@ export default function Registro() {
       }, 1500);
     } catch (error) {
       console.error("Error saving record:", error);
+      setSaveError("Não foi possível salvar o registro. Verifique sua conexão e suas permissões e tente novamente.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
+    <div className="min-h-dvh bg-[var(--senti-app-bg)] text-[var(--senti-text)] p-4 md:p-8">
       <div className="max-w-3xl mx-auto space-y-6">
         <header className="flex items-center gap-4 mb-8">
           <button onClick={() => navigate(-1)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <h1 className="text-2xl font-light text-slate-200">Registro Clínico</h1>
-            <p className="text-slate-400 text-sm">Paciente: {appointment?.patientNome || patient?.nome || "Carregando..."}</p>
+            <h1 className="text-2xl font-semibold text-[var(--senti-text)]">Registro Clínico</h1>
+            <p className="text-sm text-[var(--senti-muted)]">Paciente: {appointment?.patientNome || patient?.nome || "Carregando..."}</p>
           </div>
         </header>
 
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-slate-900 border border-white/5 p-6 rounded-3xl space-y-6"
+          className="bg-[var(--senti-surface)] border border-[var(--senti-border)] p-5 sm:p-6 rounded-3xl space-y-6 shadow-sm"
         >
           <div className="flex flex-wrap gap-4 items-center justify-between border-b border-white/5 pb-6">
             <div className="flex items-center gap-2 text-slate-400">
@@ -158,11 +168,12 @@ export default function Registro() {
             </div>
             
             <div className="flex items-center gap-3">
-              <span className="text-sm text-slate-400">Nível de Risco:</span>
-              <select 
+              <label htmlFor="registro-risk" className="text-sm text-[var(--senti-muted)]">Nível de Risco:</label>
+              <select
+                id="registro-risk"
                 value={risco}
                 onChange={(e) => setRisco(e.target.value as Appointment['riskLevel'])}
-                className="bg-slate-950 border border-white/10 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+                className="min-h-11 bg-[var(--senti-surface-muted)] text-[var(--senti-text)] border border-[var(--senti-border)] rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
               >
                 <option value="baixo">Baixo</option>
                 <option value="moderado">Moderado</option>
@@ -172,21 +183,22 @@ export default function Registro() {
           </div>
 
           <div className="space-y-3">
-            <label className="flex items-center gap-2 text-slate-300 font-medium">
+            <label htmlFor="registro-notes" className="flex items-center gap-2 text-[var(--senti-text)] font-medium">
               <FileText className="w-5 h-5 text-emerald-500" />
               Evolução da Sessão
             </label>
             <textarea
+              id="registro-notes"
               rows={8}
               value={nota}
               onChange={(e) => setNota(e.target.value)}
               placeholder="Descreva os pontos principais da sessão, intervenções realizadas e plano para as próximas sessões..."
-              className="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none font-sans"
+              className="w-full min-h-48 bg-[var(--senti-surface-muted)] border border-[var(--senti-border)] rounded-2xl p-4 text-[var(--senti-text)] placeholder:text-[var(--senti-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-y font-sans"
             />
           </div>
 
           {/* Structured Clinical Summary and Checklist */}
-          <div className="border-t border-white/5 pt-6 space-y-6">
+          <div className="border-t border-[var(--senti-border)] pt-6 space-y-6">
             <h3 className="text-sm font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
               <FileText className="w-4 h-4 text-emerald-400" />
               Parâmetros Clínicos Estruturados
@@ -228,7 +240,7 @@ export default function Registro() {
             {/* Structured Summary Textarea */}
             <div className="space-y-3">
               <div className="flex justify-between items-center flex-wrap gap-2">
-                <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Sumário Estruturado</label>
+                <label htmlFor="registro-summary" className="text-xs font-bold text-[var(--senti-muted)] uppercase tracking-wider block">Sumário Estruturado</label>
                 <button
                   type="button"
                   onClick={gerarResumoPorIA}
@@ -256,21 +268,27 @@ export default function Registro() {
               )}
 
               <textarea
+                id="registro-summary"
                 rows={4}
                 value={structuredSummary}
                 onChange={(e) => setStructuredSummary(e.target.value)}
                 placeholder="Insira o sumário dos achados clínicos, objetivos terapêuticos e monitoramento comportamental..."
-                className="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-none text-sm font-sans"
+                className="w-full bg-[var(--senti-surface-muted)] border border-[var(--senti-border)] rounded-2xl p-4 text-[var(--senti-text)] placeholder:text-[var(--senti-muted)] focus:outline-none focus:ring-2 focus:ring-emerald-500/50 resize-y text-sm font-sans"
               />
             </div>
           </div>
 
-          <div className="bg-blue-900/20 border border-blue-500/20 p-4 rounded-xl flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-blue-200/80">
-              Lembre-se: Este registro é confidencial e protegido por criptografia ponta-a-ponta, acessível apenas por você.
+          <div className="bg-[var(--senti-surface-muted)] border border-[var(--senti-border)] p-4 rounded-xl flex items-start gap-3">
+            <ShieldCheck className="w-5 h-5 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-[var(--senti-muted)] leading-relaxed">
+              Registre apenas informações necessárias ao acompanhamento. O acesso a este conteúdo depende das permissões da sua conta e das regras de acesso da plataforma.
             </p>
           </div>
+          {saveError && (
+            <p role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">
+              {saveError}
+            </p>
+          )}
 
           <div className="pt-4 flex justify-end">
             <button 

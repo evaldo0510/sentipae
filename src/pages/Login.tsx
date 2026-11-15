@@ -1,456 +1,233 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
-import { HeartPulse, ArrowLeft, User, Briefcase, ShieldAlert, Building, Building2, PlusCircle, ShieldCheck, Compass } from "lucide-react";
-import { loginWithGoogle } from "../services/firebase";
+import { ArrowLeft, ArrowRight, HeartHandshake, ShieldCheck, Sparkles, LoaderCircle } from "lucide-react";
+import { GoogleAuthProvider, getRedirectResult, signInWithPopup, signInWithRedirect } from "firebase/auth";
+import { auth } from "../services/firebase";
 import { userService } from "../services/userService";
 import { useAuth } from "../components/AuthProvider";
 import { useSecurityAudit } from "../hooks/useSecurityAudit";
-import { UserType } from "../types";
+
+function getAuthErrorMessage(error: unknown) {
+  const code = (error as { code?: string })?.code;
+  if (code === "auth/unauthorized-domain") {
+    return `Este endereço ainda não está autorizado no Firebase Authentication. Solicite a inclusão de ${window.location.hostname} em Authentication → Settings → Authorized domains.`;
+  }
+  if (code === "auth/popup-blocked" || code === "auth/popup-closed-by-user") {
+    return "A janela de autenticação foi bloqueada ou fechada. Tente novamente ou permita a abertura da janela.";
+  }
+  if (code === "auth/network-request-failed") {
+    return "Não foi possível conectar ao serviço de autenticação. Verifique sua conexão e tente novamente.";
+  }
+  if (code === "auth/too-many-requests") {
+    return "Muitas tentativas em sequência. Aguarde alguns minutos antes de tentar novamente.";
+  }
+  if (code === "auth/operation-not-allowed") {
+    return "O acesso com Google ainda não está habilitado no Firebase Authentication.";
+  }
+  return "Não foi possível concluir seu acesso agora. Tente novamente. Se o problema continuar, fale com o suporte.";
+}
 
 export default function Login() {
   const navigate = useNavigate();
   const { user, profile, isAuthReady } = useAuth();
-  const [error, setError] = useState("");
-  const [tipoSelecionado, setTipoSelecionado] = useState<UserType>("usuario");
   const { logSecurityEvent } = useSecurityAudit();
-
-  // Quick Login States
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [activeTab, setActiveTab] = useState<"quick" | "google">("quick");
+
+  useEffect(() => {
+    getRedirectResult(auth)
+      .then(async (result) => {
+        if (result?.user) {
+          await logSecurityEvent(
+            "login",
+            "Autenticação com Google concluída após redirecionamento.",
+            [],
+            "sucesso"
+          );
+        }
+      })
+      .catch((redirectError) => {
+        console.error("Falha ao concluir o redirecionamento do Google:", redirectError);
+        setError(getAuthErrorMessage(redirectError));
+      });
+  }, [logSecurityEvent]);
 
   useEffect(() => {
     if (isAuthReady && user && profile) {
-      // Se já estiver logado e tiver perfil, vai para o dashboard
-      navigate("/dashboard");
+      navigate("/app", { replace: true });
     }
   }, [user, profile, isAuthReady, navigate]);
 
-  const handleQuickLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nome.trim() || !email.trim()) {
-      setError("Por favor, preencha seu nome e e-mail.");
-      return;
-    }
+  const handleGoogleLogin = async () => {
+    if (isSubmitting) return;
     setError("");
     setIsSubmitting(true);
 
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: "select_account" });
+
     try {
-      // 1. Tenta login anônimo para obter UID e sessão real no Firebase SDK
-      // Isso é perfeito porque funciona em qualquer domínio e passa pelas regras do Firestore!
-      console.log("Iniciando login digital rápido...");
-      const { signInAnonymously, updateProfile } = await import("firebase/auth");
-      const { auth } = await import("../services/firebase");
-      
-      const userCredential = await signInAnonymously(auth);
-      const currentUser = userCredential.user;
-      
-      if (currentUser) {
-        localStorage.removeItem("simulatedUser");
-        localStorage.removeItem("simulatedProfile");
-        console.log("Login digital efetuado, atualizando nome de exibição...");
-        await updateProfile(currentUser, {
-          displayName: nome,
-        });
-        
-        console.log("Sincronizando perfil do usuário no Firestore...");
-        const profile = await userService.syncProfile({
-          uid: currentUser.uid,
-          displayName: nome,
-          email: email
-        }, tipoSelecionado);
-        
-        console.log("Sessão e perfil criados com sucesso!", profile);
-        localStorage.removeItem("simulatedUser");
-        localStorage.removeItem("simulatedProfile");
-        localStorage.setItem("tipo", profile?.tipo || tipoSelecionado);
-        
-        try {
-          await logSecurityEvent('login', `Login rápido efetuado com sucesso como ${tipoSelecionado} - E-mail: ${email}`, [], 'sucesso');
-        } catch (auditErr) {
-          console.error("Erro log auditoria:", auditErr);
-        }
-
-        navigate("/dashboard");
-        window.location.reload();
+      // Mobile browsers are more reliable with the full-page redirect flow.
+      const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+      if (isMobile) {
+        await signInWithRedirect(auth, provider);
+        return;
       }
-    } catch (err: any) {
-      console.warn("Firebase Anonymous Sign-In indisponível. Usando fallback de simulação local para resiliência de 100%.", err);
-      
-      // Fallback robusto se o Firebase estiver desconfigurado ou bloqueado
-      const mockUser = {
-        uid: "simulated_" + btoa(email).replace(/=/g, ""),
-        displayName: nome,
-        email: email,
-        emailVerified: true,
-        providerData: [],
-        photoURL: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-      } as any;
 
-      const mockProfile = {
-        uid: mockUser.uid,
-        nome: nome,
-        email: email,
-        tipo: tipoSelecionado,
-        onboardingCompleted: false,
-        createdAt: new Date().toISOString(),
-        favoritos: [],
-        xp: 15,
-        level: "Iniciante",
-        streak: 1
-      } as any;
+      const credential = await signInWithPopup(auth, provider);
+      // New accounts are always created as patients. Privileged roles are assigned
+      // through the platform's authorized administration flow, never by the login form.
+      const syncedProfile = await userService.syncProfile(credential.user, "usuario");
+      if (!syncedProfile) {
+        throw new Error("Não foi possível preparar seu perfil. Tente novamente.");
+      }
 
-      localStorage.setItem("simulatedUser", JSON.stringify(mockUser));
-      localStorage.setItem("simulatedProfile", JSON.stringify(mockProfile));
-      localStorage.setItem("tipo", tipoSelecionado);
-      
       try {
-        await logSecurityEvent('login', `Login rápido simulado com sucesso como ${tipoSelecionado} - E-mail: ${email}`, [], 'sucesso');
-      } catch (auditErr) {
-        console.error("Erro log auditoria:", auditErr);
+        await logSecurityEvent("login", "Autenticação com Google concluída.", [], "sucesso");
+      } catch (auditError) {
+        console.error("Falha ao registrar auditoria de login:", auditError);
       }
 
-      navigate("/dashboard");
-      window.location.reload();
+      navigate("/dashboard", { replace: true });
+    } catch (authError) {
+      const code = (authError as { code?: string })?.code;
+      if (code === "auth/popup-blocked") {
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectError) {
+          console.error("Falha no redirecionamento do Google:", redirectError);
+          setError(getAuthErrorMessage(redirectError));
+          return;
+        }
+      }
+      console.error("Falha na autenticação:", authError);
+      const message = getAuthErrorMessage(authError);
+      setError(message);
+      try {
+        await logSecurityEvent("falha_seguranca", "Falha na tentativa de autenticação.", [], "erro");
+      } catch (auditError) {
+        console.error("Falha ao registrar auditoria de erro:", auditError);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleDemoLogin = () => {
-    setError("");
-    
-    const displayNameMap: { [key in UserType]?: string } = {
-      usuario: "Paciente de Demonstração",
-      terapeuta: "Dr. Gabriel Alencar (Demonstração)",
-      empresa: "MenteFeliz Empresas (Demonstração)",
-      prefeitura: "Prefeitura de São Paulo (Demonstração)",
-      clinica: "Clínica Premium (Demonstração)",
-      hospital: "Hospital Geral (Demonstração)",
-      moderador: "Moderador Geral (Demonstração)",
-      admin_institucional: "Gestor Institucional (Demonstração)",
-      super_admin: "Super Admin Global (Demonstração)",
-      admin: "Administrador Geral (Demonstração)"
-    };
-    const displayName = displayNameMap[tipoSelecionado] || "Usuário de Demonstração";
-
-    const mockUser = {
-      uid: "guest_demo_user",
-      displayName: displayName,
-      email: "mentefelizterapias@gmail.com",
-      emailVerified: true,
-      providerData: [],
-      photoURL: tipoSelecionado === "terapeuta" 
-        ? "https://images.unsplash.com/photo-1559839734-2b71f1536780?w=100&auto=format&fit=crop&q=80"
-        : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80"
-    } as any;
-
-    const targetType = tipoSelecionado;
-
-    const mockProfile = {
-      uid: "guest_demo_user",
-      nome: mockUser.displayName,
-      email: mockUser.email,
-      tipo: targetType,
-      onboardingCompleted: false,
-      createdAt: new Date().toISOString(),
-      favoritos: [],
-      xp: 15,
-      level: "Iniciante",
-      streak: 1
-    } as any;
-
-    localStorage.setItem("simulatedUser", JSON.stringify(mockUser));
-    localStorage.setItem("simulatedProfile", JSON.stringify(mockProfile));
-    localStorage.setItem("tipo", targetType);
-    navigate("/dashboard");
-    window.location.reload();
-  };
-
-  const handleGoogleLogin = async () => {
-    setError("");
-    try {
-      console.log("Iniciando login com Google...");
-      const user = await loginWithGoogle();
-      if (user) {
-        localStorage.removeItem("simulatedUser");
-        localStorage.removeItem("simulatedProfile");
-        console.log("Login com Google bem-sucedido, sincronizando perfil...");
-        const profile = await userService.syncProfile(user, tipoSelecionado);
-        console.log("Perfil sincronizado:", profile);
-        localStorage.setItem("tipo", profile?.tipo || tipoSelecionado);
-        
-        // Log critical security event: login success
-        try {
-          await logSecurityEvent('login', `Autenticação com Google efetuada com sucesso como perfil: ${profile?.tipo || tipoSelecionado}`, [], 'sucesso');
-        } catch (auditErr) {
-          console.error("Erro ao registrar log de auditoria de login:", auditErr);
-        }
-
-        navigate("/dashboard");
-      }
-    } catch (err: any) {
-      console.error("Erro detalhado no login:", err);
-      let message = "Erro ao fazer login com Google.";
-      
-      const currentDomain = window.location.hostname;
-      
-      // Handle specific Firebase Auth errors
-      if (err.code === 'auth/unauthorized-domain') {
-        message = `Este domínio (${currentDomain}) não está autorizado no Firebase Console. 
-        
-        Para resolver:
-        1. Acesse o Console do Firebase (console.firebase.google.com)
-        2. Vá em Autenticação > Configurações > Domínios Autorizados
-        3. Adicione o domínio: ${currentDomain}`;
-      } else if (err.code === 'auth/popup-blocked') {
-        message = "O popup de login foi bloqueado pelo seu navegador. Por favor, permita popups para este site.";
-      } else {
-        try {
-          const parsed = JSON.parse(err.message);
-          if (parsed.error) message = parsed.error;
-        } catch (e) {
-          message = err.message || message;
-        }
-      }
-      
-      // Log failed login security event
-      try {
-        await logSecurityEvent('falha_seguranca', `Falha na tentativa de login com Google: ${message}`, [], 'erro');
-      } catch (auditErr) {
-        console.error("Erro ao registrar log de auditoria de falha de login:", auditErr);
-      }
-
-      setError(message);
-    }
-  };
-
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      className="min-h-screen bg-[#f5f5f0] flex flex-col items-center justify-center p-4 sm:p-6 text-[#1a1a1a]"
-    >
-      <div className="w-full max-w-md space-y-6 sm:space-y-8 bg-white p-6 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] border border-black/5 shadow-2xl">
-        <button onClick={() => navigate(-1)} className="p-3 -ml-2 hover:bg-black/5 rounded-full transition-colors mb-2 min-w-[44px] min-h-[44px] flex items-center justify-center">
-          <ArrowLeft className="w-5 h-5 text-[#4a4a4a]" />
-        </button>
+    <main className="senti-auth-page min-h-dvh w-full px-4 py-6 sm:px-6 lg:px-10">
+      <div className="mx-auto flex min-h-[calc(100dvh-3rem)] w-full max-w-6xl flex-col">
+        <header className="flex items-center justify-between">
+          <button
+            type="button"
+            onClick={() => navigate("/")}
+            className="senti-auth-back inline-flex min-h-11 items-center gap-2 rounded-full px-3 text-sm font-semibold transition-colors"
+            aria-label="Voltar para a página inicial"
+          >
+            <ArrowLeft size={18} aria-hidden="true" />
+            <span>Voltar</span>
+          </button>
+          <a href="/" className="senti-auth-brand inline-flex items-center gap-2" aria-label="SentiPae, início">
+            <span className="senti-auth-mark"><HeartHandshake size={22} aria-hidden="true" /></span>
+            <span className="text-lg font-bold tracking-tight">SentiPae</span>
+          </a>
+        </header>
 
-        <div className="space-y-4 sm:space-y-6 text-center">
-          <div className="w-14 h-14 sm:w-16 sm:h-16 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto border border-emerald-100">
-            <HeartPulse className="w-7 h-7 sm:w-8 sm:h-8 text-emerald-600" />
-          </div>
-          <h2 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#1a1a1a]">
-            Acesse a Plataforma
-          </h2>
-          <p className="text-[#6a6a6a] font-light text-sm sm:text-base">
-            Selecione seu perfil. Se for seu primeiro acesso, seu cadastro será criado automaticamente.
-          </p>
-        </div>
-
-        {error && (
-          <div className="p-5 bg-red-50 border border-red-100 rounded-3xl text-red-600 text-sm font-medium whitespace-pre-line">
-            <div className="flex items-center gap-2 mb-2 font-bold uppercase tracking-widest text-[10px]">
-              <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              Erro de Configuração
-            </div>
-            {error}
-          </div>
-        )}
-
-        <div className="space-y-2 mb-6">
-          <label className="text-xs font-bold uppercase tracking-wider text-[#6a6a6a] block">
-            Escolha sua Função / Perfil
-          </label>
-          <div className="relative">
-            <select
-              value={tipoSelecionado}
-              onChange={(e) => setTipoSelecionado(e.target.value as UserType)}
-              className="w-full px-4 py-4 rounded-2xl bg-[#f5f5f0] border border-black/5 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-[#1a1a1a] font-medium appearance-none cursor-pointer"
-            >
-              <option value="usuario">Paciente</option>
-              <option value="terapeuta">Terapeuta</option>
-              <option value="clinica">Clínica</option>
-              <option value="empresa">Empresa</option>
-              <option value="prefeitura">Prefeitura</option>
-              <option value="moderador">Moderador</option>
-              <option value="admin_institucional">Administrador Institucional</option>
-              <option value="super_admin">Super Admin</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-[#4a4a4a]">
-              <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-              </svg>
-            </div>
-          </div>
-          
-          {/* Visual Role Card Badge */}
-          <div className="p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex items-start gap-3 mt-2">
-            <div className="p-2 bg-emerald-600 text-white rounded-xl mt-0.5">
-              {tipoSelecionado === "usuario" && <User className="w-5 h-5" />}
-              {tipoSelecionado === "terapeuta" && <Briefcase className="w-5 h-5" />}
-              {tipoSelecionado === "clinica" && <PlusCircle className="w-5 h-5" />}
-              {tipoSelecionado === "empresa" && <Building className="w-5 h-5" />}
-              {tipoSelecionado === "prefeitura" && <Building2 className="w-5 h-5" />}
-              {tipoSelecionado === "moderador" && <ShieldCheck className="w-5 h-5" />}
-              {tipoSelecionado === "admin_institucional" && <Compass className="w-5 h-5" />}
-              {tipoSelecionado === "super_admin" && <ShieldAlert className="w-5 h-5" />}
-              {tipoSelecionado === "admin" && <ShieldAlert className="w-5 h-5" />}
-            </div>
-            <div className="text-left">
-              <h4 className="text-sm font-serif font-bold text-[#1a1a1a]">
-                {tipoSelecionado === "usuario" && "Paciente"}
-                {tipoSelecionado === "terapeuta" && "Terapeuta"}
-                {tipoSelecionado === "clinica" && "Clínica"}
-                {tipoSelecionado === "empresa" && "Empresa"}
-                {tipoSelecionado === "prefeitura" && "Prefeitura"}
-                {tipoSelecionado === "moderador" && "Moderador"}
-                {tipoSelecionado === "admin_institucional" && "Administrador Institucional"}
-                {tipoSelecionado === "super_admin" && "Super Admin"}
-                {tipoSelecionado === "admin" && "Super Admin"}
-              </h4>
-              <p className="text-[#6a6a6a] text-xs leading-relaxed mt-0.5">
-                {tipoSelecionado === "usuario" && "Acesse seu diário emocional, converse com a IARA e agende consultas."}
-                {tipoSelecionado === "terapeuta" && "Gerencie sessões com pacientes, acesse prontuários e decole na carreira."}
-                {tipoSelecionado === "clinica" && "Gestão centralizada do corpo clínico, atendimentos e faturamento."}
-                {tipoSelecionado === "empresa" && "Monitore métricas corporativas de estresse e bem-estar organizacional."}
-                {tipoSelecionado === "prefeitura" && "Acompanhe a telemetria analítica de crises e pílulas de conhecimento."}
-                {tipoSelecionado === "moderador" && "Filtre posts denunciados na comunidade, mensagens e triagens de risco."}
-                {tipoSelecionado === "admin_institucional" && "Gerencie permissões institucionais e configurações gerais."}
-                {tipoSelecionado === "super_admin" && "Controle auditoria de logs criptografados e snapshots do servidor."}
-                {tipoSelecionado === "admin" && "Controle auditoria de logs criptografados e snapshots do servidor."}
+        <div className="grid flex-1 items-center gap-10 py-10 lg:grid-cols-[1.1fr_.9fr] lg:gap-20">
+          <section className="mx-auto w-full max-w-xl text-center lg:mx-0 lg:text-left">
+            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: .35 }}>
+              <div className="senti-auth-eyebrow mx-auto mb-6 inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold tracking-wide lg:mx-0">
+                <Sparkles size={14} aria-hidden="true" />
+                Cuidado que conecta pessoas
+              </div>
+              <h1 className="text-balance text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+                Seu espaço de cuidado começa <span className="senti-auth-highlight">aqui.</span>
+              </h1>
+              <p className="senti-auth-subtitle mx-auto mt-6 max-w-lg text-base leading-relaxed sm:text-lg lg:mx-0">
+                Um lugar para acolher o que você sente, organizar sua jornada e encontrar apoio profissional no momento certo.
               </p>
-            </div>
-          </div>
-        </div>
-
-        {/* TABS DE ENTRADA */}
-        <div className="flex border-b border-black/5 mb-6">
-          <button
-            type="button"
-            onClick={() => setActiveTab("quick")}
-            className={`flex-1 pb-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 text-center ${
-              activeTab === "quick"
-                ? "border-emerald-600 text-emerald-700 font-extrabold"
-                : "border-transparent text-[#6a6a6a] hover:text-[#1a1a1a]"
-            }`}
-          >
-            Acesso Rápido
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("google")}
-            className={`flex-1 pb-3 text-sm font-bold uppercase tracking-wider transition-all border-b-2 text-center ${
-              activeTab === "google"
-                ? "border-emerald-600 text-emerald-700 font-extrabold"
-                : "border-transparent text-[#6a6a6a] hover:text-[#1a1a1a]"
-            }`}
-          >
-            Conta Google
-          </button>
-        </div>
-
-        <div className="space-y-6">
-          {activeTab === "quick" ? (
-            <form onSubmit={handleQuickLogin} className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#6a6a6a] block">
-                  Seu Nome Completo
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={nome}
-                  onChange={(e) => setNome(e.target.value)}
-                  placeholder="Ex: Maria Silva"
-                  className="w-full px-4 py-4 rounded-2xl bg-[#f5f5f0] border border-black/5 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-[#1a1a1a] font-medium"
-                />
+              <div className="mt-8 hidden items-center gap-3 text-left lg:flex">
+                <span className="senti-auth-trust-icon"><ShieldCheck size={20} aria-hidden="true" /></span>
+                <div>
+                  <p className="text-sm font-semibold">Sua jornada merece cuidado e respeito.</p>
+                  <p className="senti-auth-muted text-xs">Acesso seguro à sua conta e às suas informações.</p>
+                </div>
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#6a6a6a] block">
-                  Seu E-mail de Contato
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Ex: maria@email.com"
-                  className="w-full px-4 py-4 rounded-2xl bg-[#f5f5f0] border border-black/5 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-[#1a1a1a] font-medium"
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full py-5 px-6 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/60 text-white rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-600/20 active:scale-[0.98]"
-              >
-                {isSubmitting ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                    </svg>
-                    Carregando...
-                  </span>
-                ) : (
-                  "Entrar na Plataforma"
-                )}
-              </button>
-            </form>
-          ) : (
-            <div className="space-y-4">
-              <button 
-                onClick={handleGoogleLogin}
-                type="button"
-                className="w-full py-5 px-6 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-xl shadow-emerald-600/20"
-              >
-                <svg className="w-6 h-6" viewBox="0 0 24 24">
-                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="currentColor" />
-                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="currentColor" />
-                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="currentColor" />
-                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="currentColor" />
-                </svg>
-                Entrar ou Cadastrar com Google
-              </button>
+            </motion.div>
+          </section>
+
+          <motion.section
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: .4, delay: .05 }}
+            className="senti-auth-card mx-auto w-full max-w-md rounded-[2rem] p-6 shadow-xl sm:p-9"
+            aria-labelledby="login-title"
+          >
+            <div className="mb-8">
+              <p className="senti-auth-muted mb-2 text-xs font-bold uppercase tracking-[.16em]">Bem-vindo(a)</p>
+              <h2 id="login-title" className="text-2xl font-bold tracking-tight sm:text-3xl">Acesse sua conta</h2>
+              <p className="senti-auth-muted mt-2 text-sm leading-relaxed">Entre para continuar de onde você parou.</p>
             </div>
-          )}
-          
-          <div className="pt-4 border-t border-black/5 space-y-4">
-            <button 
-              onClick={handleDemoLogin}
+
+            {error && (
+              <div role="alert" aria-live="polite" className="mb-5 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-relaxed text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200">
+                {error}
+              </div>
+            )}
+
+            <button
               type="button"
-              className="w-full py-4 px-6 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-2xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-3 border border-slate-200 hover:border-slate-300 min-h-[48px] cursor-pointer"
+              onClick={handleGoogleLogin}
+              disabled={isSubmitting}
+              className="senti-auth-google flex min-h-14 w-full items-center justify-center gap-3 rounded-2xl px-5 text-sm font-bold transition-all hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60"
             >
-              🔑 Acessar Modo de Demonstração (Bypass)
+              {isSubmitting ? (
+                <LoaderCircle className="animate-spin" size={20} aria-hidden="true" />
+              ) : (
+                <svg viewBox="0 0 48 48" className="h-5 w-5" aria-hidden="true">
+                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.01 13.22l7.98 6.19C11.91 13.72 17.4 9.5 24 9.5Z" transform="translate(0 5)" />
+                  <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.74 7.18l7.65 5.93c4.46-4.13 7.13-10.2 7.13-17.58Z" transform="translate(0 -1)" />
+                  <path fill="#FBBC05" d="M10.64 28.59a14.4 14.4 0 0 1-.76-4.59c0-1.59.27-3.13.76-4.59l-7.98-6.19A23.9 23.9 0 0 0 0 24c0 3.86.92 7.51 2.66 10.78l7.98-6.19Z" transform="translate(1)" />
+                  <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.9-5.87l-7.65-5.93c-2.13 1.43-4.84 2.28-8.25 2.28-6.6 0-12.09-4.22-14.01-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48Z" />
+                </svg>
+              )}
+              {isSubmitting ? "Conectando com o Google..." : "Continuar com Google"}
+              {!isSubmitting && <ArrowRight size={17} aria-hidden="true" />}
             </button>
 
-            <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl">
-              <p className="text-amber-800 text-xs text-center leading-relaxed">
-                Dica: Para um acesso 100% livre de configurações do Firebase, use a aba <strong>Acesso Rápido</strong> acima ou clique no botão de <strong>Demonstração (Bypass)</strong>!
-              </p>
+            <div className="my-6 flex items-center gap-3">
+              <span className="senti-auth-divider h-px flex-1" />
+              <span className="senti-auth-muted text-xs">Acesso protegido</span>
+              <span className="senti-auth-divider h-px flex-1" />
             </div>
-          </div>
+
+            <div className="senti-auth-note rounded-2xl p-4">
+              <div className="flex items-start gap-3">
+                <ShieldCheck size={19} className="mt-0.5 shrink-0" aria-hidden="true" />
+                <p className="text-xs leading-relaxed">
+                  Seu perfil e suas permissões são definidos pela plataforma. O tipo de acesso não pode ser escolhido ou elevado pela tela de login.
+                </p>
+              </div>
+            </div>
+
+            <p className="senti-auth-muted mt-7 text-center text-xs leading-relaxed">
+              Ao continuar, você concorda com nossos{" "}
+              <a className="senti-auth-link font-semibold underline-offset-4 hover:underline" href="/termos">Termos de Uso</a>
+              {" "}e{" "}
+              <a className="senti-auth-link font-semibold underline-offset-4 hover:underline" href="/privacidade">Aviso de Privacidade</a>.
+            </p>
+            <p className="mt-5 text-center text-sm">
+              <span className="senti-auth-muted">Precisa de ajuda? </span>
+              <a href="/contato" className="senti-auth-link font-semibold underline-offset-4 hover:underline">Fale com o suporte</a>
+            </p>
+          </motion.section>
         </div>
 
-        <div className="text-center mt-8 space-y-4">
-          <p className="text-sm text-[#6a6a6a]">
-            Ao entrar, você concorda com nossos <br />
-            <span className="text-emerald-600 font-bold cursor-pointer hover:underline">Termos de Uso</span> e <span className="text-emerald-600 font-bold cursor-pointer hover:underline">Privacidade</span>.
-          </p>
-          
-          <div className="pt-4 border-t border-black/5">
-            <button 
-              onClick={() => navigate("/contato")}
-              className="text-xs text-[#9a9a9a] hover:text-emerald-600 transition-colors"
-            >
-              Problemas com o login? Entre em contato com o suporte.
-            </button>
-          </div>
-        </div>
+        <footer className="senti-auth-muted pb-2 text-center text-xs">
+          SentiPae · Cuidado humano, tecnologia responsável.
+        </footer>
       </div>
-    </motion.div>
+    </main>
   );
 }

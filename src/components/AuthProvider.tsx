@@ -36,29 +36,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let unsubscribeProfile: (() => void) | null = null;
     let unsubscribeSession: (() => void) | null = null;
 
-    const simUserStr = localStorage.getItem("simulatedUser");
-    const simProfileStr = localStorage.getItem("simulatedProfile");
-    if (simUserStr && simProfileStr) {
-      try {
-        const simUser = JSON.parse(simUserStr);
-        const simProfile = JSON.parse(simProfileStr);
-        setUser(simUser);
-        setProfile(simProfile);
-        setLoading(false);
-        setIsAuthReady(true);
-        return () => {};
-      } catch (e) {
-        console.error("Failed to parse simulated session:", e);
-      }
-    }
+    // Authentication state is sourced exclusively from Firebase Auth.
+    // Browser storage is not an identity provider and must never grant access.
+    localStorage.removeItem("simulatedUser");
+    localStorage.removeItem("simulatedProfile");
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      // Synchronously set loading to true and isAuthReady to false BEFORE any async yield.
-      // This immediately locks the rendering tree and prevents premature queries during auth changes.
       setLoading(true);
       setIsAuthReady(false);
 
-      // Clear previous subscription if any
       if (unsubscribeProfile) {
         unsubscribeProfile();
         unsubscribeProfile = null;
@@ -71,10 +57,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (currentUser) {
         let userProfile: UserProfile | null = null;
         try {
-          // Preload profile immediately
           userProfile = await userService.getUser(currentUser.uid);
           if (!userProfile) {
-            // First-time sign-in profile creation
             userProfile = await userService.syncProfile(currentUser);
           }
 
@@ -82,36 +66,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             localStorage.setItem("tipo", userProfile.tipo);
           }
 
-          // Register real-time database listener
-          unsubscribeProfile = onSnapshot(doc(db, 'users', currentUser.uid), (docSnap) => {
-            if (docSnap.exists()) {
-              const updatedProfile = docSnap.data() as UserProfile;
-              setProfile(updatedProfile);
-              localStorage.setItem("tipo", updatedProfile.tipo);
+          unsubscribeProfile = onSnapshot(
+            doc(db, 'users', currentUser.uid),
+            (docSnap) => {
+              if (docSnap.exists()) {
+                const updatedProfile = docSnap.data() as UserProfile;
+                setProfile(updatedProfile);
+                localStorage.setItem("tipo", updatedProfile.tipo);
+              }
+            },
+            (listenerError) => {
+              console.error("Erro ao acompanhar atualizações do perfil:", listenerError);
             }
-          });
+          );
 
-          // Register session and listen to revocation
           try {
             await sessionService.registerSession(currentUser.uid);
             unsubscribeSession = sessionService.listenToCurrentSession(currentUser.uid, () => {
               auth.signOut();
             });
           } catch (sessionErr) {
-            console.error("Failed to establish session monitoring:", sessionErr);
+            console.error("Falha ao registrar monitoramento da sessão:", sessionErr);
           }
         } catch (error) {
-          console.error("Error fetching user profile:", error);
+          console.error("Erro ao carregar perfil autenticado:", error);
         }
 
-        // Apply state atomically to prevent premature render of authenticated children without profiles
         setUser(currentUser);
         setProfile(userProfile);
         setLoading(false);
         setIsAuthReady(true);
-        
-        // Seed mock data if needed
-        userService.seedMockData().catch(console.error);
+
       } else {
         setUser(null);
         setProfile(null);
@@ -123,33 +108,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return () => {
       unsubscribe();
-      if (unsubscribeProfile) {
-        unsubscribeProfile();
-      }
-      if (unsubscribeSession) {
-        unsubscribeSession();
-      }
+      if (unsubscribeProfile) unsubscribeProfile();
+      if (unsubscribeSession) unsubscribeSession();
     };
   }, []);
 
   const hasPremiumAccess = (): boolean => {
     if (!profile) return false;
     if (
-      profile.tipo === 'admin' || 
-      profile.tipo === 'super_admin' || 
-      profile.tipo === 'terapeuta' || 
-      profile.tipo === 'clinica' || 
-      profile.tipo === 'empresa' || 
-      profile.tipo === 'prefeitura' || 
+      profile.tipo === 'admin' ||
+      profile.tipo === 'super_admin' ||
+      profile.tipo === 'terapeuta' ||
+      profile.tipo === 'clinica' ||
+      profile.tipo === 'empresa' ||
+      profile.tipo === 'prefeitura' ||
       profile.tipo === 'moderador'
-    ) {
-      return true;
-    }
+    ) return true;
     if (profile.subscriptionStatus === 'active') return true;
     if (profile.subscriptionStatus === 'trial') {
       if (!profile.trialEndDate) return true;
-      const end = new Date(profile.trialEndDate);
-      return new Date() <= end;
+      return new Date() <= new Date(profile.trialEndDate);
     }
     return false;
   };
@@ -169,20 +147,13 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   const { user, profile, loading, isAuthReady } = useAuth();
   const location = useLocation();
 
-  if (loading || !isAuthReady) {
-    return <LoadingScreen message="Verificando permissões..." />;
-  }
+  if (loading || !isAuthReady) return <LoadingScreen message="Verificando permissões..." />;
+  if (!user) return <Navigate to="/login" replace />;
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Se onboardingCompleted for falso ou não existir, redirecionar o usuário para a rota /onboarding
   const isStandardUser = !profile || profile.tipo === 'usuario';
   if (isStandardUser && !profile?.onboardingCompleted && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
-
   return <>{children}</>;
 };
 
@@ -190,23 +161,13 @@ export const PremiumProtectedRoute: React.FC<{ children: React.ReactNode }> = ({
   const { user, profile, loading, isAuthReady, hasPremiumAccess } = useAuth();
   const location = useLocation();
 
-  if (loading || !isAuthReady) {
-    return <LoadingScreen message="Verificando assinatura..." />;
-  }
+  if (loading || !isAuthReady) return <LoadingScreen message="Verificando assinatura..." />;
+  if (!user) return <Navigate to="/login" replace />;
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Se onboardingCompleted for falso ou não existir, redirecionar o usuário para a rota /onboarding
   const isStandardUser = !profile || profile.tipo === 'usuario';
   if (isStandardUser && !profile?.onboardingCompleted && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
-
-  if (!hasPremiumAccess()) {
-    return <Navigate to="/assinatura" replace />;
-  }
-
+  if (!hasPremiumAccess()) return <Navigate to="/assinatura" replace />;
   return <>{children}</>;
 };
