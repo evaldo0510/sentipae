@@ -24,6 +24,6 @@
     "noEmit": true
   },
   "exclude": [
-    "api/backupCloudFunction.ts"
+    "functions/backupCloudFunction.ts"
   ]
 }
