@@ -282,7 +282,7 @@ export const userService = {
   },
 
   getUser: async (uid: string): Promise<UserProfile | null> => {
-    if (!auth.currentUser || !uid) return null;
+    if (!auth.currentUser || !uid || uid.startsWith("therapist-")) return null;
 
     const path = `users/${uid}`;
     try {
@@ -308,9 +308,13 @@ export const userService = {
       return snapshot.docs
         .map((item) => ({ uid: item.id, ...item.data() } as UserProfile))
         .filter((therapist) =>
-          !therapist.validationStatus ||
-          therapist.validationStatus === "approved" ||
-          therapist.validationStatus === "active"
+          !therapist.uid.startsWith("therapist-") &&
+          !therapist.email?.endsWith("@exemplo.com") &&
+          (
+            !therapist.validationStatus ||
+            therapist.validationStatus === "approved" ||
+            therapist.validationStatus === "active"
+          )
         );
     } catch (error) {
       console.warn("Não foi possível carregar os perfis profissionais reais:", error);
