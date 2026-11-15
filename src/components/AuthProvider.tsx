@@ -97,8 +97,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
         setIsAuthReady(true);
 
-        // Keep the existing non-authentication demo content seeding behavior.
-        userService.seedMockData().catch(console.error);
       } else {
         setUser(null);
         setProfile(null);
