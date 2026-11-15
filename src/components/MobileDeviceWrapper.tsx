@@ -569,16 +569,18 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
 
                 <div className="grid grid-cols-1 gap-3 overflow-y-auto pr-1">
                   {quickTools.map((tool) => (
-                    <div 
+                    <button
+                      type="button"
                       key={tool.title}
                       onClick={() => {
                         setShowTools(false);
                         handleNavClick(tool.path);
                       }}
-                      className="group p-3.5 bg-slate-50 dark:bg-slate-950/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/10 border border-slate-150 dark:border-white/5 hover:border-emerald-500/20 rounded-2xl flex items-start gap-3.5 transition-all cursor-pointer active:scale-99"
+                      aria-label={`${tool.title}: ${tool.description}`}
+                      className="group w-full min-h-16 p-3.5 bg-slate-50 dark:bg-slate-950/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/10 border border-slate-200 dark:border-white/5 hover:border-emerald-500/20 rounded-2xl flex items-start gap-3.5 text-left transition-all cursor-pointer active:scale-[0.99] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-500"
                     >
                       <div className={cn("p-2.5 rounded-xl border shrink-0 group-hover:scale-105 transition-transform", tool.color)}>
-                        <tool.icon className="w-5 h-5" />
+                        <tool.icon className="w-5 h-5" aria-hidden="true" />
                       </div>
                       <div className="space-y-1 text-left min-w-0 flex-1">
                         <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
@@ -588,7 +590,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
                           {tool.description}
                         </p>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
 
