@@ -288,7 +288,7 @@ export const userService = {
     try {
       // Firestore rules decide whether this authenticated user may read the requested profile.
       const docSnap = await getDoc(doc(db, "users", uid));
-      return docSnap.exists() ? ({ uid: docSnap.id, ...docSnap.data() } as UserProfile) : null;
+      return docSnap.exists() ? ({ ...docSnap.data(), uid: docSnap.id } as UserProfile) : null;
     } catch (error) {
       handleFirestoreError(error, OperationType.GET, path);
       return null;
@@ -1010,18 +1010,6 @@ export const userService = {
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, path);
       throw error;
-    }
-  },
-
-  seedMockData: async () => {
-    const { MOCK_THERAPISTS } = await import('./mockData');
-    const therapists = await userService.getTherapists();
-    
-    if (therapists.length === 0) {
-      console.log("Seeding mock therapists...");
-      for (const t of MOCK_THERAPISTS) {
-        await setDoc(doc(db, 'users', t.uid), t);
-      }
     }
   },
 
