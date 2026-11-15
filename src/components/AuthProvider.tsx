@@ -38,6 +38,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Authentication state is sourced exclusively from Firebase Auth.
     // Browser storage is not an identity provider and must never grant access.
+    localStorage.removeItem("simulatedUser");
+    localStorage.removeItem("simulatedProfile");
 
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setLoading(true);
