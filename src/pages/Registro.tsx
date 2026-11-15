@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "motion/react";
-import { ArrowLeft, Save, FileText, Clock, AlertCircle, Sparkles, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Save, FileText, Clock, Sparkles, ShieldCheck } from "lucide-react";
 import { userService } from "../services/userService";
 import { chatService } from "../services/chatService";
 import { auth } from "../services/firebase";
