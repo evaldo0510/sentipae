@@ -1,55 +1,55 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { PWAProvider } from "./contexts/PWAContext";
 import { FeaturePreviewProvider } from "./context/FeaturePreviewContext";
 import { FeaturePreviewDialog } from "./components/FeaturePreviewDialog";
-import DashboardPaciente from "./pages/DashboardPaciente";
-import LandingPro from "./pages/LandingPro";
-import LeadForm from "./pages/LeadForm";
-import VendasEmpresa from "./pages/VendasEmpresa";
-import Triagem from "./pages/Triagem";
-import Respiracao from "./pages/Respiracao";
-import ChatIARA from "./pages/ChatIARA";
-import Direcionamento from "./pages/Direcionamento";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import Profissionais from "./pages/Profissionais";
-import Agendamento from "./pages/Agendamento";
-import Diario from "./pages/Diario";
-import Terapeuta from "./pages/Terapeuta";
-import Empresa from "./pages/Empresa";
-import Prefeitura from "./pages/Prefeitura";
-import Emergencia from "./pages/Emergencia";
-import ProntoAtendimento from "./pages/ProntoAtendimento";
-import TerapeutaSetup from "./pages/TerapeutaSetup";
-import Atendimento from "./pages/Atendimento";
-import Registro from "./pages/Registro";
-import ProntuarioPaciente from "./pages/ProntuarioPaciente";
-import TerapeutaPerfil from "./pages/TerapeutaPerfil";
-import LiveIARA from "./pages/LiveIARA";
-import Perfil from "./pages/Perfil";
-import GerenciamentoDados from "./pages/GerenciamentoDados";
-import Clinica from "./pages/Clinica";
-import Hospital from "./pages/Hospital";
-import Moderador from "./pages/Moderador";
-import Reset from "./pages/Reset";
-import Reset21 from "./pages/Reset21";
-import Reset21Day from "./pages/Reset21Day";
-import Reset21Sales from "./pages/Reset21Sales";
-import Subscription from "./pages/Subscription";
-import SimulatedCheckout from "./pages/SimulatedCheckout";
-import AdminDashboard from "./pages/AdminDashboard";
-import Terms from "./pages/Terms";
-import Privacy from "./pages/Privacy";
-import Security from "./pages/Security";
-import Contact from "./pages/Contact";
-import Sobre from "./pages/Sobre";
-import Onboarding from "./pages/Onboarding";
-import AppDashboard from "./pages/AppDashboard";
-import Marketplace from "./pages/Marketplace";
-import EspacoInspirar from "./pages/EspacoInspirar";
-import DashboardInstitucional from "./pages/DashboardInstitucional";
+const DashboardPaciente = lazy(() => import("./pages/DashboardPaciente"));
+const LandingPro = lazy(() => import("./pages/LandingPro"));
+const LeadForm = lazy(() => import("./pages/LeadForm"));
+const VendasEmpresa = lazy(() => import("./pages/VendasEmpresa"));
+const Triagem = lazy(() => import("./pages/Triagem"));
+const Respiracao = lazy(() => import("./pages/Respiracao"));
+const ChatIARA = lazy(() => import("./pages/ChatIARA"));
+const Direcionamento = lazy(() => import("./pages/Direcionamento"));
+const Login = lazy(() => import("./pages/Login"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Profissionais = lazy(() => import("./pages/Profissionais"));
+const Agendamento = lazy(() => import("./pages/Agendamento"));
+const Diario = lazy(() => import("./pages/Diario"));
+const Terapeuta = lazy(() => import("./pages/Terapeuta"));
+const Empresa = lazy(() => import("./pages/Empresa"));
+const Prefeitura = lazy(() => import("./pages/Prefeitura"));
+const Emergencia = lazy(() => import("./pages/Emergencia"));
+const ProntoAtendimento = lazy(() => import("./pages/ProntoAtendimento"));
+const TerapeutaSetup = lazy(() => import("./pages/TerapeutaSetup"));
+const Atendimento = lazy(() => import("./pages/Atendimento"));
+const Registro = lazy(() => import("./pages/Registro"));
+const ProntuarioPaciente = lazy(() => import("./pages/ProntuarioPaciente"));
+const TerapeutaPerfil = lazy(() => import("./pages/TerapeutaPerfil"));
+const LiveIARA = lazy(() => import("./pages/LiveIARA"));
+const Perfil = lazy(() => import("./pages/Perfil"));
+const GerenciamentoDados = lazy(() => import("./pages/GerenciamentoDados"));
+const Clinica = lazy(() => import("./pages/Clinica"));
+const Hospital = lazy(() => import("./pages/Hospital"));
+const Moderador = lazy(() => import("./pages/Moderador"));
+const Reset = lazy(() => import("./pages/Reset"));
+const Reset21 = lazy(() => import("./pages/Reset21"));
+const Reset21Day = lazy(() => import("./pages/Reset21Day"));
+const Reset21Sales = lazy(() => import("./pages/Reset21Sales"));
+const Subscription = lazy(() => import("./pages/Subscription"));
+const SimulatedCheckout = lazy(() => import("./pages/SimulatedCheckout"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
+const Terms = lazy(() => import("./pages/Terms"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Security = lazy(() => import("./pages/Security"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Sobre = lazy(() => import("./pages/Sobre"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const AppDashboard = lazy(() => import("./pages/AppDashboard"));
+const Marketplace = lazy(() => import("./pages/Marketplace"));
+const EspacoInspirar = lazy(() => import("./pages/EspacoInspirar"));
+const DashboardInstitucional = lazy(() => import("./pages/DashboardInstitucional"));
 import { TenantRoute } from "./components/TenantRoute";
 import IARAChatBubble from "./components/IARAChatBubble";
 import SOSButton from "./components/SOSButton";
@@ -67,6 +67,14 @@ function App() {
         <PWAProvider>
           <FeaturePreviewProvider>
             <Router>
+              <Suspense fallback={
+                <div className="min-h-[40vh] w-full flex items-center justify-center p-6" role="status" aria-live="polite">
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <span className="h-9 w-9 rounded-full border-2 border-emerald-600/20 border-t-emerald-600 animate-spin" aria-hidden="true" />
+                    <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Carregando seu espaço...</span>
+                  </div>
+                </div>
+              }>
               <Routes>
                 <Route path="/" element={<LandingPro />} />
                 <Route path="/checkout/simulated" element={<ProtectedRoute><SimulatedCheckout /></ProtectedRoute>} />
@@ -125,6 +133,7 @@ function App() {
                   <Route path="/live-iara" element={<LiveIARA />} />
                 </Route>
               </Routes>
+              </Suspense>
               <IARAChatBubble />
               <SOSButton />
               <NetworkStatusIndicator />

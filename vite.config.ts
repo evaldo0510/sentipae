@@ -23,8 +23,8 @@ export default defineConfig(({mode}) => {
           name: 'SENTI',
           short_name: 'SENTI',
           description: 'SENTI: Onde sua dor encontra pausa.',
-          theme_color: '#020617',
-          background_color: '#020617',
+          theme_color: '#0f766e',
+          background_color: '#f4f7f6',
           display: 'standalone',
           icons: [
             {

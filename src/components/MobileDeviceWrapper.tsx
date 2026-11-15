@@ -48,7 +48,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
   // Simulated native cold-start splash screen
   const [showSplash, setShowSplash] = useState(false);
   const [splashPercent, setSplashPercent] = useState(0);
-  const [splashSub, setSplashSub] = useState("Estabelecendo canais criptografados...");
+  const [splashSub, setSplashSub] = useState("Preparando seu espaço de acolhimento...");
   
   // PWA Installation Guide state
   const [showInstallGuide, setShowInstallGuide] = useState(false);
@@ -117,13 +117,13 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
           }, 500);
         } else {
           if (progress < 25) {
-            setSplashSub("Iniciando criptografia grau clínico...");
+            setSplashSub("Preparando sua experiência no SentiPae...");
           } else if (progress < 55) {
-            setSplashSub("Sincronizando registros clínicos offline...");
+            setSplashSub("Organizando seus recursos e informações...");
           } else if (progress < 80) {
-            setSplashSub("Carregando inteligência de regulação IARA...");
+            setSplashSub("Carregando os recursos de acolhimento da IARA...");
           } else {
-            setSplashSub("Conectando ao pronto-atendimento emocional...");
+            setSplashSub("Conectando você aos recursos do SentiPae...");
           }
         }
         setSplashPercent(progress);
@@ -243,11 +243,11 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
   ];
 
   return (
-    <div className="min-h-screen w-full bg-slate-950 flex flex-col md:flex-row items-center justify-center p-0 md:p-6 overflow-x-hidden antialiased font-sans select-none" id="sentí-mobile-stage">
+    <div className="min-h-screen w-full bg-[var(--senti-app-bg)] flex flex-col md:flex-row items-stretch justify-start p-0 lg:p-6 overflow-x-hidden antialiased font-sans" id="sentí-mobile-stage">
       
       {/* Decorative desktop-only side presentation - Collapsible Sidebar */}
       <div className={cn(
-        "hidden lg:flex flex-col h-[760px] text-slate-400 p-5 shrink-0 border border-slate-200/50 dark:border-white/5 bg-white dark:bg-slate-900/40 rounded-[2.5rem] transition-all duration-300 relative mr-8 select-none",
+        "hidden lg:flex flex-col h-[calc(100dvh-3rem)] sticky top-6 text-slate-500 dark:text-slate-400 p-5 shrink-0 border border-slate-200/70 dark:border-white/10 bg-white dark:bg-slate-900/70 rounded-3xl transition-all duration-300 relative mr-6",
         sidebarCollapsed ? "w-20" : "w-64"
       )}>
         {/* Toggle Button */}
@@ -316,16 +316,16 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
         {!sidebarCollapsed && (
           <div className="bg-slate-50 dark:bg-slate-950/30 border border-slate-150 dark:border-white/5 rounded-2xl p-3.5 space-y-1 mt-auto">
             <p className="text-[9px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400">Servidor Seguro</p>
-            <p className="text-[10px] text-slate-450 dark:text-slate-500 leading-normal font-light">Sua conexão com o SentiPae é criptografada.</p>
+            <p className="text-[10px] text-slate-450 dark:text-slate-500 leading-normal font-light">Acesse seu espaço de acolhimento com privacidade.</p>
           </div>
         )}
       </div>
 
-      {/* Main Interactive Device Mockup (Visible above md, full screen below md) */}
-      <div className="relative w-full md:w-[410px] h-screen md:h-[840px] md:rounded-[3rem] md:shadow-[0_0_80px_rgba(16,185,129,0.08)] bg-slate-900 md:border-[12px] md:border-slate-800 flex flex-col overflow-hidden shrink-0 transition-all duration-300">
+      {/* Main application surface — responsive on mobile and desktop */}
+      <div className="relative flex-1 min-w-0 w-full h-[100dvh] lg:h-[calc(100dvh-3rem)] lg:rounded-3xl lg:shadow-[0_24px_80px_rgba(15,23,42,0.08)] bg-white dark:bg-slate-950 lg:border lg:border-slate-200/70 dark:lg:border-white/10 flex flex-col overflow-hidden shrink-0 transition-all duration-300">
         
         {/* Physical Camera Shell / Buttons overlay on desktop design */}
-        <div className="absolute top-0 inset-x-0 h-10 bg-slate-900 z-50 flex items-center justify-between px-6 pointer-events-none hidden md:flex">
+        <div className="absolute top-0 inset-x-0 h-10 bg-slate-900 z-50 flex items-center justify-between px-6 pointer-events-none hidden">
           {/* Mock clock left */}
           <span className="text-xs font-semibold text-slate-350">{time || "12:00"}</span>
           
@@ -347,13 +347,13 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
         </div>
 
         {/* Browser native layout top padding replacement inside phone container */}
-        <div className="hidden md:block h-10 w-full shrink-0 bg-white dark:bg-slate-950 border-b border-slate-100 dark:border-white/5" />
+        <div className="hidden" />
 
         {/* Simulated iOS status space for real mobile devices */}
         <div className="block md:hidden pb-safe bg-white dark:bg-slate-950" />
 
         {/* App body scroll view inside the frame */}
-        <div className="flex-1 w-full overflow-y-auto relative bg-slate-50 dark:bg-slate-950 pb-28">
+        <div className="flex-1 w-full min-w-0 overflow-y-auto relative bg-[var(--senti-surface-muted)] pb-28">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
@@ -636,7 +636,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
 
                 <div className="pt-2 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-2xl border border-slate-150 dark:border-white/5 text-center">
                   <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
-                    🔑 Plantão Emergencial e apoio IARA operam sob criptografia fim-a-fim certificada.
+                    🔑 O SentiPae conecta você a recursos de acolhimento e suporte humano.
                   </p>
                 </div>
               </motion.div>
@@ -704,7 +704,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
 
                 <p className="text-[9px] text-center text-slate-600 font-semibold uppercase tracking-wider flex items-center justify-center gap-1.5">
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  Canais Protegidos Grau Clínico
+                  Ambiente de acolhimento SentiPae
                 </p>
               </div>
             </motion.div>
@@ -753,7 +753,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Para utilizar recursos avançados de hardware (como alertas de batimento, haptics instantâneos e segurança biométrica), o Sentí opera de forma nativa quando adicionado à sua tela de início.
+                  Adicionar o SentiPae à tela inicial facilita o acesso e permite abrir a experiência em uma janela própria, quando o navegador oferecer suporte.
                 </p>
 
                 {deviceOS === 'ios' ? (

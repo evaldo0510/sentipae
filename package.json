@@ -13,7 +13,7 @@
     "type-check": "tsc --noEmit"
   },
   "engines": {
-    "node": "20.x"
+    "node": "26.x"
   },
   "dependencies": {
     "@google/genai": "^1.29.0",

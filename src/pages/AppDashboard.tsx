@@ -39,6 +39,7 @@ import { cn } from "../lib/utils";
 import { Onboarding } from "../components/Onboarding";
 import { useFeaturePreview } from "../context/FeaturePreviewContext";
 import { GAMIFICATION_BADGES, checkAndAwardBadges, Badge } from "../services/gamificationService";
+import { iaraHistoryService, type IaraConversation } from "../services/iaraHistoryService";
 
 export default function AppDashboard() {
   const navigate = useNavigate();
@@ -56,6 +57,7 @@ export default function AppDashboard() {
   const [totalEntriesCount, setTotalEntriesCount] = useState(0);
   const [loadingData, setLoadingData] = useState(true);
   const [selectedBadge, setSelectedBadge] = useState<Badge | null>(null);
+  const [recentIaraConversation, setRecentIaraConversation] = useState<IaraConversation | null>(null);
   
   const { triggerPreview } = useFeaturePreview();
 
@@ -106,6 +108,24 @@ export default function AppDashboard() {
       }
     }
   }, [isAuthReady, profile, navigate]);
+
+  // Load the latest IARA conversation for the authenticated user.
+  useEffect(() => {
+    let cancelled = false;
+    if (isAuthReady && user) {
+      iaraHistoryService.fetchConversations()
+        .then((conversations) => {
+          if (!cancelled) setRecentIaraConversation(conversations[0] ?? null);
+        })
+        .catch((error) => {
+          console.warn("Não foi possível carregar o histórico recente da IARA:", error);
+          if (!cancelled) setRecentIaraConversation(null);
+        });
+    } else if (isAuthReady) {
+      setRecentIaraConversation(null);
+    }
+    return () => { cancelled = true; };
+  }, [isAuthReady, user]);
 
   // Load user data from Firestore
   useEffect(() => {
@@ -287,7 +307,7 @@ export default function AppDashboard() {
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 pb-24 transition-colors font-sans select-none">
       
       {/* HEADER SECTION */}
-      <header className="px-4 py-6 sm:px-6 border-b border-slate-200/60 dark:border-white/5 bg-white/95 dark:bg-slate-950/85 backdrop-blur-md sticky top-0 z-30 flex justify-between items-center transition-all">
+      <header className="px-4 py-6 sm:px-6 border-b border-slate-200/60 dark:border-white/5 bg-white/90 dark:bg-slate-950/85 backdrop-blur-xl sticky top-0 z-30 shadow-[0_1px_0_rgba(15,23,42,0.04)] flex justify-between items-center transition-all">
         <div className="flex items-center gap-3">
           {/* User Photo */}
           <button 
@@ -302,7 +322,7 @@ export default function AppDashboard() {
           </button>
           
           <div className="space-y-0.5">
-            <h1 className="text-base sm:text-lg font-black font-serif italic text-slate-850 dark:text-slate-100 leading-none">
+            <h1 className="text-base sm:text-lg font-black font-serif italic text-slate-900 dark:text-slate-100 leading-none">
               Olá, {welcomeName}!
             </h1>
             <p className="text-[10px] text-slate-500 dark:text-emerald-400/80 font-bold uppercase tracking-widest leading-none">
@@ -322,7 +342,7 @@ export default function AppDashboard() {
       </header>
 
       {/* MAIN CONTAINER */}
-      <main className="p-4 sm:p-6 max-w-xl mx-auto space-y-6">
+      <main className="p-4 sm:p-6 max-w-6xl mx-auto w-full space-y-7">
         
         {/* Dynamic Welcome Affirmation Callout */}
         <div className="p-4 bg-gradient-to-r from-emerald-500/5 to-teal-500/5 dark:from-emerald-500/10 dark:to-teal-500/10 border border-emerald-500/15 rounded-3xl space-y-1 relative overflow-hidden">
@@ -348,7 +368,7 @@ export default function AppDashboard() {
             )}
           </div>
           
-          <div className="grid grid-cols-2 lg:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
             {shortcuts.map((sc) => {
               const Icon = sc.icon;
               return (
@@ -418,44 +438,20 @@ export default function AppDashboard() {
             </div>
           </div>
 
-          {/* Weekly Consistency Progress indicator */}
-          <div className="bg-slate-50 dark:bg-slate-950/30 p-4 rounded-2xl border border-slate-150 dark:border-white/5 space-y-3">
-            <div className="flex justify-between items-center text-xs">
-              <span className="text-slate-500 dark:text-slate-400 font-bold">Consistência Semanal</span>
-              <span className="font-mono text-[10px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/10 px-2 py-0.5 rounded-full">
-                Sintonia Ativa
-              </span>
-            </div>
-            
-            {/* Visual weekday tracker */}
-            <div className="grid grid-cols-7 gap-2.5 pt-1">
-              {["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((day, idx) => {
-                // Mock consistency for visual representation
-                const isChecked = idx <= (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1);
-                return (
-                  <div key={day} className="flex flex-col items-center gap-1.5">
-                    <span className="text-[9px] font-medium text-slate-400">{day}</span>
-                    <div className={cn(
-                      "w-7 h-7 rounded-lg border flex items-center justify-center transition-all",
-                      isChecked 
-                        ? "bg-emerald-500/15 border-emerald-500/30 text-emerald-500 shadow-sm" 
-                        : "bg-slate-100 dark:bg-slate-900 border-slate-200/50 dark:border-white/5 text-slate-300 dark:text-slate-700"
-                    )}>
-                      {isChecked ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : <span className="w-1 h-1 bg-slate-300 dark:bg-slate-700 rounded-full" />}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Trial callout */}
-            {trialDays !== null && (
-              <p className="text-[10px] text-slate-450 flex items-center gap-1.5 font-light pt-1 border-t border-slate-200/50 dark:border-white/5">
-                <Crown className="w-3.5 h-3.5 text-amber-500" />
-                Seu período de teste expira em <span className="font-bold text-slate-700 dark:text-slate-200">{trialDays} dias</span>.
-              </p>
-            )}
+          <div className="rounded-2xl border border-slate-150 dark:border-white/5 bg-slate-50 dark:bg-slate-950/30 p-4 space-y-2">
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">Seu ritmo, no seu tempo</p>
+            <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+              Sua jornada é acompanhada pelos registros reais que você escolhe fazer. Não existe obrigação de manter uma sequência perfeita.
+            </p>
           </div>
+
+          {/* Trial callout */}
+          {trialDays !== null && (
+            <p className="text-[10px] text-slate-450 flex items-center gap-1.5 font-light pt-1 border-t border-slate-200/50 dark:border-white/5">
+              <Crown className="w-3.5 h-3.5 text-amber-500" />
+              Seu período de teste expira em <span className="font-bold text-slate-700 dark:text-slate-200">{trialDays} dias</span>.
+            </p>
+          )}
         </section>
 
         {/* SEÇÃO 3 — ATIVIDADE RECENTE */}
@@ -464,18 +460,28 @@ export default function AppDashboard() {
           
           <div className="space-y-3">
             
-            {/* 1. Últimas conversas com a IA */}
+            {/* 1. Última conversa real com a IARA */}
             <div className="p-3.5 bg-slate-50 dark:bg-slate-950/30 rounded-2xl border border-slate-150 dark:border-white/5 space-y-2">
               <div className="flex justify-between items-center text-[10px] text-slate-450 uppercase font-black tracking-wider">
-                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><BrainCircuit className="w-3.5 h-3.5" /> Conversa com IARA</span>
-                <span>Ativa</span>
+                <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400"><BrainCircuit className="w-3.5 h-3.5" /> Histórico da IARA</span>
+                <span>{recentIaraConversation ? "Recente" : "Disponível"}</span>
               </div>
-              <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">"Estou aqui para te apoiar e guiar sua mente. Desabafe sem julgamentos."</p>
-              <button 
-                onClick={() => navigate("/chat")}
-                className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1 hover:underline cursor-pointer"
-              >
-                Retomar conversa <ArrowRight className="w-3 h-3" />
+              {recentIaraConversation ? (
+                <>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug truncate">
+                    {recentIaraConversation.title || "Conversa com a IARA"}
+                  </p>
+                  <p className="text-[10px] text-slate-400">
+                    Atualizada em {new Date(recentIaraConversation.updatedAt || recentIaraConversation.createdAt).toLocaleDateString("pt-BR")}
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-slate-400 font-light leading-relaxed">
+                  Você ainda não iniciou uma conversa. A IARA está disponível para acolher você e ajudar a organizar o próximo passo.
+                </p>
+              )}
+              <button onClick={() => navigate("/chat")} className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1 hover:underline cursor-pointer">
+                {recentIaraConversation ? "Abrir IARA" : "Começar conversa"} <ArrowRight className="w-3 h-3" />
               </button>
             </div>
 
@@ -516,25 +522,24 @@ export default function AppDashboard() {
                 <span>Diário</span>
               </div>
 
-              {recentMoods.length > 0 ? (
+              {recentDiary.length > 0 ? (
                 <div className="space-y-2">
-                  {recentMoods.slice(0, 2).map((entry, idx) => (
-                    <div 
-                      key={idx}
-                      className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-black/5 dark:border-white/5 flex justify-between items-center"
-                    >
-                      <div className="min-w-0 pr-4">
-                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">"{entry.emotion || entry.note || "Check-in emocional"}"</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5 font-light">{new Date(entry.timestamp).toLocaleDateString('pt-BR')}</p>
-                      </div>
-                      <div className="w-7 h-7 rounded-full bg-rose-500/10 text-rose-500 flex items-center justify-center font-bold text-xs font-mono shrink-0">
-                        {entry.value}/10
-                      </div>
+                  {recentDiary.slice(0, 2).map((entry, idx) => (
+                    <div key={entry.id || idx} className="p-2.5 bg-white dark:bg-slate-900 rounded-xl border border-black/5 dark:border-white/5">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+                        {entry.title || "Registro emocional"}
+                      </p>
+                      {entry.content && (
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{entry.content}</p>
+                      )}
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        {entry.timestamp ? new Date(entry.timestamp).toLocaleDateString("pt-BR") : "Data não informada"}
+                      </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-xs text-slate-400 font-light py-1">Você ainda não possui registros no diário emocional hoje.</p>
+                <p className="text-xs text-slate-400 font-light py-1">Você ainda não possui registros no diário emocional.</p>
               )}
             </div>
 
