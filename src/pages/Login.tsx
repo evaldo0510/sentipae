@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { ArrowLeft, ArrowRight, HeartHandshake, ShieldCheck, Sparkles, LoaderCircle } from "lucide-react";
-import { GoogleAuthProvider, signInWithPopup, signInWithRedirect } from "firebase/auth";
+import { GoogleAuthProvider, getRedirectResult, signInWithPopup, signInWithRedirect } from "firebase/auth";
 import { auth } from "../services/firebase";
 import { userService } from "../services/userService";
 import { useAuth } from "../components/AuthProvider";
@@ -34,6 +34,13 @@ export default function Login() {
   const { logSecurityEvent } = useSecurityAudit();
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    getRedirectResult(auth).catch((redirectError) => {
+      console.error("Falha ao concluir o redirecionamento do Google:", redirectError);
+      setError(getAuthErrorMessage(redirectError));
+    });
+  }, []);
 
   useEffect(() => {
     if (isAuthReady && user && profile) {
@@ -73,6 +80,17 @@ export default function Login() {
 
       navigate("/dashboard", { replace: true });
     } catch (authError) {
+      const code = (authError as { code?: string })?.code;
+      if (code === "auth/popup-blocked") {
+        try {
+          await signInWithRedirect(auth, provider);
+          return;
+        } catch (redirectError) {
+          console.error("Falha no redirecionamento do Google:", redirectError);
+          setError(getAuthErrorMessage(redirectError));
+          return;
+        }
+      }
       console.error("Falha na autenticação:", authError);
       const message = getAuthErrorMessage(authError);
       setError(message);
