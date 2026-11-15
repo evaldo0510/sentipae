@@ -55,7 +55,7 @@ export default function Login() {
 
   useEffect(() => {
     if (isAuthReady && user && profile) {
-      navigate("/dashboard", { replace: true });
+      navigate("/app", { replace: true });
     }
   }, [user, profile, isAuthReady, navigate]);
 
