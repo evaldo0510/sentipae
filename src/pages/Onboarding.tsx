@@ -30,7 +30,7 @@ export default function Onboarding() {
     if (isAuthReady && profile?.onboardingCompleted) {
       navigate("/app", { replace: true });
     }
-  }, [isAuthReady, profile, navigate]);
+  }, [isAuthReady, user, profile, navigate]);
 
   const objectives = [
     { 
