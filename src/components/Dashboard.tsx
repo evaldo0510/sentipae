@@ -377,7 +377,7 @@ export default function Dashboard() {
                 className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
                   activeChartEngine === "d3"
                     ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/50 dark:border-white/5"
-                    : "text-slate-450 hover:text-slate-800 dark:hover:text-slate-200"
+                    : "text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 }`}
               >
                 D3.js (Histórico)
@@ -387,7 +387,7 @@ export default function Dashboard() {
                 className={`px-3 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg transition-all cursor-pointer ${
                   activeChartEngine === "recharts"
                     ? "bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-sm border border-slate-200/50 dark:border-white/5"
-                    : "text-slate-450 hover:text-slate-800 dark:hover:text-slate-200"
+                    : "text-slate-400 hover:text-slate-800 dark:hover:text-slate-200"
                 }`}
               >
                 Recharts (Semana)
@@ -571,7 +571,7 @@ export default function Dashboard() {
                               <div key={idx} className="flex justify-between items-center gap-4">
                                 <span className="flex items-center gap-1">
                                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-                                  <span className="text-slate-550 dark:text-slate-400">{p.name}:</span>
+                                  <span className="text-slate-500 dark:text-slate-400">{p.name}:</span>
                                 </span>
                                 <span className="font-bold text-slate-800 dark:text-slate-100">{p.value}</span>
                               </div>
