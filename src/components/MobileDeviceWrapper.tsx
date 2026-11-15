@@ -48,7 +48,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
   // Simulated native cold-start splash screen
   const [showSplash, setShowSplash] = useState(false);
   const [splashPercent, setSplashPercent] = useState(0);
-  const [splashSub, setSplashSub] = useState("Estabelecendo canais criptografados...");
+  const [splashSub, setSplashSub] = useState("Preparando seu espaço de acolhimento...");
   
   // PWA Installation Guide state
   const [showInstallGuide, setShowInstallGuide] = useState(false);
@@ -117,13 +117,13 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
           }, 500);
         } else {
           if (progress < 25) {
-            setSplashSub("Iniciando criptografia grau clínico...");
+            setSplashSub("Preparando sua experiência no SentiPae...");
           } else if (progress < 55) {
-            setSplashSub("Sincronizando registros clínicos offline...");
+            setSplashSub("Organizando seus recursos e informações...");
           } else if (progress < 80) {
-            setSplashSub("Carregando inteligência de regulação IARA...");
+            setSplashSub("Carregando os recursos de acolhimento da IARA...");
           } else {
-            setSplashSub("Conectando ao pronto-atendimento emocional...");
+            setSplashSub("Conectando você aos recursos do SentiPae...");
           }
         }
         setSplashPercent(progress);
@@ -321,7 +321,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
         )}
       </div>
 
-      {/* Main Interactive Device Mockup (Visible above md, full screen below md) */}
+      {/* Main application surface — responsive on mobile and desktop */}
       <div className="relative flex-1 min-w-0 w-full h-[100dvh] lg:h-[calc(100dvh-3rem)] lg:rounded-3xl lg:shadow-[0_24px_80px_rgba(15,23,42,0.08)] bg-white dark:bg-slate-950 lg:border lg:border-slate-200/70 dark:lg:border-white/10 flex flex-col overflow-hidden shrink-0 transition-all duration-300">
         
         {/* Physical Camera Shell / Buttons overlay on desktop design */}
@@ -753,7 +753,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
                 </div>
 
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Para utilizar recursos avançados de hardware (como alertas de batimento, haptics instantâneos e segurança biométrica), o Sentí opera de forma nativa quando adicionado à sua tela de início.
+                  Adicionar o SentiPae à tela inicial facilita o acesso e permite abrir a experiência em uma janela própria, quando o navegador oferecer suporte.
                 </p>
 
                 {deviceOS === 'ios' ? (
