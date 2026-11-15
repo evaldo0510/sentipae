@@ -1,15 +1,5 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build"
-    }
-  ],
   "rewrites": [
     {
       "source": "/api/(.*)",
@@ -24,5 +14,6 @@
     "api/index.ts": {
       "includeFiles": "firebase-applet-config.json"
     }
-  }
+  },
+  "$schema": "https://openapi.vercel.sh/vercel.json"
 }
