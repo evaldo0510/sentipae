@@ -282,43 +282,13 @@ export const userService = {
   },
 
   getUser: async (uid: string): Promise<UserProfile | null> => {
-    if (uid.startsWith('simulated_') || uid === 'guest_demo_user') {
-      const simProfileStr = localStorage.getItem("simulatedProfile");
-      if (simProfileStr) {
-        try {
-          return JSON.parse(simProfileStr) as UserProfile;
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      return {
-        uid: uid,
-        nome: "Paciente de Demonstração",
-        email: "mentefelizterapias@gmail.com",
-        tipo: "usuario",
-        createdAt: new Date().toISOString(),
-        favoritos: [],
-        xp: 15,
-        level: "Iniciante",
-        streak: 1
-      } as any;
-    }
-    if (uid && uid.startsWith('therapist-')) {
-      const { MOCK_THERAPISTS } = await import('./mockData');
-      const found = MOCK_THERAPISTS.find(t => t.uid === uid);
-      if (found) return found;
-    }
+    if (!auth.currentUser || !uid) return null;
 
-    const currentUser = auth.currentUser;
-    if (!currentUser) return null;
-
-    const path = `users/${currentUser.uid}`;
+    const path = `users/${uid}`;
     try {
-      const docSnap = await getDoc(doc(db, "users", auth.currentUser.uid));
-      if (docSnap.exists()) {
-        return docSnap.data() as UserProfile;
-      }
-      return null;
+      // Firestore rules decide whether this authenticated user may read the requested profile.
+      const docSnap = await getDoc(doc(db, "users", uid));
+      return docSnap.exists() ? ({ uid: docSnap.id, ...docSnap.data() } as UserProfile) : null;
     } catch (error) {
       handleFirestoreError(error, OperationType.GET, path);
       return null;
@@ -326,21 +296,26 @@ export const userService = {
   },
 
   getTherapists: async (): Promise<UserProfile[]> => {
-    const simUserStr = localStorage.getItem("simulatedUser");
-    const simUser = simUserStr ? JSON.parse(simUserStr) : null;
-    const user = auth.currentUser || simUser;
-    
-    // Explicitly using doc(db, "users", auth.currentUser.uid) as requested by the strict directive
-    if (auth.currentUser) {
-      try {
-        await getDoc(doc(db, "users", auth.currentUser.uid));
-      } catch (err) {
-        console.warn("Silent doc fetch error:", err);
-      }
-    }
+    if (!auth.currentUser) return [];
 
-    const { MOCK_THERAPISTS } = await import('./mockData');
-    return MOCK_THERAPISTS;
+    const path = "users";
+    try {
+      const therapistQuery = query(
+        collection(db, path),
+        where("tipo", "==", "terapeuta")
+      );
+      const snapshot = await getDocs(therapistQuery);
+      return snapshot.docs
+        .map((item) => ({ uid: item.id, ...item.data() } as UserProfile))
+        .filter((therapist) =>
+          !therapist.validationStatus ||
+          therapist.validationStatus === "approved" ||
+          therapist.validationStatus === "active"
+        );
+    } catch (error) {
+      console.warn("Não foi possível carregar os perfis profissionais reais:", error);
+      return [];
+    }
   },
 
   getFeaturedTherapists: async (limitCount: number = 3): Promise<UserProfile[]> => {
