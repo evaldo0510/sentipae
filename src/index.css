@@ -133,7 +133,7 @@ h1, h2, h3, h4 {
 /* Otimizações Nativas para App Móvel */
 * {
   -webkit-tap-highlight-color: transparent !important;
-  outline: none !important;
+  outline: none;
 }
 
 /* Prevenir seleção rápida de texto ao clicar repetidamente em elementos de interface */
@@ -160,3 +160,61 @@ button, a, input, select, textarea {
   -webkit-overflow-scrolling: touch;
 }
 
+
+
+/* SentiPae Design System — foundations */
+:root {
+  color-scheme: light;
+  --senti-app-bg: #f4f7f6;
+  --senti-surface: #ffffff;
+  --senti-surface-muted: #f7faf9;
+  --senti-border: #e4ece9;
+  --senti-text: #172b27;
+  --senti-muted: #71827d;
+  --senti-primary: #0f766e;
+  --senti-primary-strong: #115e59;
+  --senti-accent: #d7f3e9;
+  --senti-shadow: 0 12px 36px rgba(20, 55, 47, .06);
+}
+.dark {
+  color-scheme: dark;
+  --senti-app-bg: #0b1514;
+  --senti-surface: #111f1d;
+  --senti-surface-muted: #0e1a18;
+  --senti-border: rgba(226, 245, 239, .10);
+  --senti-text: #e8f3ef;
+  --senti-muted: #9aaca6;
+  --senti-primary: #34b7a1;
+  --senti-primary-strong: #5bd2b9;
+  --senti-accent: rgba(52, 183, 161, .14);
+  --senti-shadow: 0 16px 44px rgba(0, 0, 0, .22);
+}
+html { scroll-behavior: smooth; }
+body { background: var(--senti-app-bg); color: var(--senti-text); }
+::selection { background: rgba(15, 118, 110, .18); color: inherit; }
+:focus-visible {
+  outline: 3px solid var(--senti-primary) !important;
+  outline-offset: 3px;
+  border-radius: 8px;
+}
+button, a, input, select, textarea { transition-timing-function: cubic-bezier(.2,.8,.2,1); }
+button:disabled, [aria-disabled="true"] { cursor: not-allowed; opacity: .58; }
+.senti-surface {
+  background: var(--senti-surface);
+  border: 1px solid var(--senti-border);
+  box-shadow: var(--senti-shadow);
+  border-radius: 1.25rem;
+}
+.senti-muted { color: var(--senti-muted); }
+.senti-focus-ring:focus-visible { outline: 3px solid var(--senti-primary) !important; outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+@media (min-width: 1024px) {
+  #sentí-mobile-stage { align-items: stretch; }
+}
