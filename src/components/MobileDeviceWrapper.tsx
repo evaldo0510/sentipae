@@ -188,7 +188,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
       title: "Perfil",
       description: "Suas configurações, conquistas de nível e dados pessoais.",
       icon: User,
-      color: "text-slate-550 bg-slate-500/10 border-slate-500/20",
+      color: "text-slate-500 bg-slate-500/10 border-slate-500/20",
       path: "/perfil"
     },
     {
@@ -272,9 +272,9 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
 
         {/* Footer info */}
         {!sidebarCollapsed && (
-          <div className="bg-slate-50 dark:bg-slate-950/30 border border-slate-150 dark:border-white/5 rounded-2xl p-3.5 space-y-1 mt-auto">
+          <div className="bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-white/5 rounded-2xl p-3.5 space-y-1 mt-auto">
             <p className="text-[9px] uppercase tracking-widest font-bold text-emerald-600 dark:text-emerald-400">Servidor Seguro</p>
-            <p className="text-[10px] text-slate-450 dark:text-slate-500 leading-normal font-light">Acesse seu espaço de acolhimento com privacidade.</p>
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-normal font-light">Acesse seu espaço de acolhimento com privacidade.</p>
           </div>
         )}
       </div>
@@ -374,7 +374,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
           >
             <button 
               onClick={() => handleNavClick("/respiracao")}
-              className="px-3 py-1.5 text-[10px] font-bold text-slate-650 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
             >
               <Wind className="w-3.5 h-3.5" />
               Respiração
@@ -382,7 +382,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
             <div className="w-px h-3 bg-slate-200 dark:bg-white/10" />
             <button 
               onClick={() => handleNavClick("/inspirar")}
-              className="px-3 py-1.5 text-[10px] font-bold text-slate-650 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
             >
               <Sparkles className="w-3.5 h-3.5" />
               Inspirar
@@ -390,7 +390,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
             <div className="w-px h-3 bg-slate-200 dark:bg-white/10" />
             <button 
               onClick={() => handleNavClick("/live-iara")}
-              className="px-3 py-1.5 text-[10px] font-bold text-slate-650 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
+              className="px-3 py-1.5 text-[10px] font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-500 dark:hover:text-emerald-400 flex items-center gap-1 cursor-pointer transition-colors"
             >
               <Video className="w-3.5 h-3.5" />
               Plantão
@@ -537,7 +537,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
                   </div>
                   <button 
                     onClick={() => setShowTools(false)}
-                    className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-650 transition-all cursor-pointer"
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-white/5 rounded-full text-slate-400 hover:text-slate-600 transition-all cursor-pointer"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -594,7 +594,7 @@ export default function MobileDeviceWrapper({ children }: MobileDeviceWrapperPro
                   ))}
                 </div>
 
-                <div className="pt-2 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-2xl border border-slate-150 dark:border-white/5 text-center">
+                <div className="pt-2 bg-slate-50 dark:bg-slate-950/50 p-4 rounded-2xl border border-slate-200 dark:border-white/5 text-center">
                   <p className="text-[10px] text-slate-500 leading-relaxed font-semibold">
                     🔑 O SentiPae conecta você a recursos de acolhimento e suporte humano.
                   </p>
